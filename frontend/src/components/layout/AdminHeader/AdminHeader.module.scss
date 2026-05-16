@@ -1,0 +1,121 @@
+@use '../../../styles/variables' as *;
+
+.header {
+  height: $header-height;
+  background-color: #ffffff;
+  border-bottom: 1px solid #e0e0e0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 $spacing-lg;
+  position: sticky;
+  top: 0;
+  z-index: $z-fixed - 10;
+}
+
+.left {
+  .pageTitle {
+    font-size: $font-lg;
+    font-weight: 700;
+    color: #333;
+    margin: 0;
+  }
+}
+
+.right {
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+  
+  .iconBtn {
+    background: none;
+    border: none;
+    font-size: 24px;
+    color: #666;
+    cursor: pointer;
+    position: relative;
+    padding: 8px;
+    display: flex;
+    align-items: center;
+    border-radius: 50%;
+    transition: background-color $transition-fast;
+    
+    &:hover {
+      background-color: #f0f4f8;
+      color: $color-primary;
+    }
+    
+    .badge {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      background-color: #e50914; // Có thể giữ đỏ cho thông báo để gây chú ý, hoặc dùng color-primary
+      color: white;
+      font-size: 10px;
+      font-weight: bold;
+      width: 16px;
+      height: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      border: 2px solid white;
+    }
+  }
+  
+  .userInfo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 4px 12px;
+    border-left: 1px solid #e0e0e0;
+    border-right: 1px solid #e0e0e0;
+    
+    .avatar {
+      font-size: 36px;
+      color: #ccc;
+    }
+    
+    .avatarImg {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+    
+    .details {
+      display: flex;
+      flex-direction: column;
+      
+      .name {
+        font-size: 14px;
+        font-weight: 600;
+        color: #333;
+        line-height: 1.2;
+      }
+      
+      .role {
+        font-size: 12px;
+        color: #888;
+      }
+    }
+  }
+  
+  .logoutBtn {
+    background: none;
+    border: none;
+    font-size: 20px;
+    color: #666;
+    cursor: pointer;
+    padding: 8px;
+    display: flex;
+    align-items: center;
+    border-radius: 50%;
+    transition: all $transition-fast;
+    
+    &:hover {
+      background-color: #ffeaea;
+      color: #e50914;
+    }
+  }
+}

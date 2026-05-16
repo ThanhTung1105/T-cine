@@ -1,0 +1,122 @@
+// ===========================
+// T-Cine Global Styles
+// ===========================
+@use 'variables' as *;
+@use 'mixins' as *;
+@use 'animations';
+
+// --- Google Fonts ---
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap');
+
+// --- CSS Reset ---
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 16px;
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: $font-primary;
+  font-size: $font-base;
+  font-weight: $font-regular;
+  color: $text-primary;
+  background-color: $bg-dark;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+
+  @include custom-scrollbar;
+}
+
+// --- Links ---
+a {
+  color: inherit;
+  text-decoration: none;
+  transition: color $transition-normal;
+
+  &:hover {
+    color: $color-primary;
+  }
+}
+
+// --- Images ---
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+// --- Buttons reset ---
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  outline: none;
+  background: none;
+}
+
+// --- Inputs reset ---
+input,
+textarea,
+select {
+  font-family: inherit;
+  font-size: inherit;
+  outline: none;
+  border: none;
+}
+
+// --- Lists ---
+ul, ol {
+  list-style: none;
+}
+
+// --- Headings ---
+h1, h2, h3, h4, h5, h6 {
+  font-family: $font-heading;
+  font-weight: $font-bold;
+  line-height: 1.2;
+}
+
+// --- Selection ---
+::selection {
+  background: $color-primary;
+  color: $text-primary;
+}
+
+// --- Container utility ---
+.container {
+  @include container;
+}
+
+// --- Section spacing ---
+.section {
+  padding: $spacing-3xl 0;
+}
+
+// --- Visually hidden (accessibility) ---
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+// --- React Toastify custom theme ---
+.Toastify__toast {
+  background: $bg-card !important;
+  color: $text-primary !important;
+  border-radius: $radius-md !important;
+}

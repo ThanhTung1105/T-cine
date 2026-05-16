@@ -1,0 +1,469 @@
+@use '../../../styles/variables' as *;
+
+.roomManage {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  h2 {
+    margin: 0;
+    color: #1f2937;
+    font-size: 24px;
+  }
+
+  .addBtn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background-color: $color-primary;
+    color: white;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s;
+
+    &:hover {
+      background-color: darken($color-primary, 10%);
+    }
+  }
+}
+
+.filterSection {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background-color: white;
+  padding: 16px 20px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  
+  label {
+    font-weight: 600;
+    color: #374151;
+    font-size: 15px;
+  }
+
+  .cinemaSelect {
+    padding: 10px 16px;
+    border: 1px solid $color-primary;
+    border-radius: 6px;
+    outline: none;
+    font-size: 15px;
+    font-weight: 600;
+    color: $color-primary;
+    background-color: rgba($color-primary, 0.05);
+    cursor: pointer;
+    min-width: 250px;
+  }
+}
+
+.tableContainer {
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  border: 1px solid #f0f0f0;
+  overflow: hidden;
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+
+  th, td {
+    padding: 16px;
+    border-bottom: 1px solid #e5e7eb;
+    vertical-align: middle;
+  }
+
+  th {
+    background-color: #f9fafb;
+    color: #6b7280;
+    font-weight: 600;
+    font-size: 14px;
+  }
+
+  td {
+    color: #374151;
+    font-size: 14px;
+  }
+
+  tbody tr {
+    transition: background-color 0.2s;
+    &:hover {
+      background-color: #f9fafb;
+    }
+  }
+
+  .emptyState {
+    text-align: center;
+    color: #6b7280;
+    font-style: italic;
+    padding: 30px;
+  }
+
+  .typeBadge {
+    display: inline-block;
+    padding: 4px 10px;
+    background-color: #f3f4f6;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    font-weight: bold;
+    color: #374151;
+    font-size: 12px;
+  }
+
+  .statusBadge {
+    padding: 6px 12px;
+    border-radius: 9999px;
+    font-size: 12px;
+    font-weight: 600;
+
+    &.statusActive {
+      background-color: #d1fae5;
+      color: #065f46;
+    }
+
+    &.statusMaintenance {
+      background-color: #fee2e2;
+      color: #991b1b;
+    }
+  }
+
+  .actionBtns {
+    display: flex;
+    gap: 10px;
+
+    button {
+      background: none;
+      border: none;
+      font-size: 20px;
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 4px;
+      transition: all 0.2s;
+      
+      &.seatBtn {
+        color: #10b981;
+        &:hover { background-color: #d1fae5; }
+      }
+
+      &.editBtn {
+        color: #3b82f6;
+        &:hover { background-color: #eff6ff; }
+      }
+
+      &.deleteBtn {
+        color: #ef4444;
+        &:hover { background-color: #fef2f2; }
+      }
+    }
+  }
+}
+
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modal {
+  background-color: white;
+  width: 100%;
+  max-width: 550px;
+  max-height: 90vh;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid #e5e7eb;
+
+  h3 {
+    margin: 0;
+    font-size: 20px;
+    color: #111827;
+  }
+
+  .closeBtn {
+    background: none;
+    border: none;
+    font-size: 24px;
+    color: #6b7280;
+    cursor: pointer;
+    
+    &:hover {
+      color: #ef4444;
+    }
+  }
+}
+
+.modalBody {
+  padding: 24px;
+  overflow-y: auto;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.formRow {
+  display: flex;
+  gap: 20px;
+
+  .formGroup {
+    flex: 1;
+  }
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #374151;
+  }
+
+  input, select, textarea {
+    padding: 10px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 14px;
+    color: #111827;
+    transition: border-color 0.2s;
+
+    &:focus {
+      outline: none;
+      border-color: $color-primary;
+      box-shadow: 0 0 0 3px rgba($color-primary, 0.1);
+    }
+    
+    &:disabled {
+      background-color: #f3f4f6;
+      cursor: not-allowed;
+      color: #6b7280;
+    }
+  }
+  
+  .helperText {
+    font-size: 12px;
+    color: #6b7280;
+  }
+}
+
+.seatConfigSection {
+  background-color: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: 8px;
+  padding: 16px;
+  
+  h4 {
+    margin: 0 0 4px 0;
+    color: #334155;
+    font-size: 15px;
+  }
+  
+  p {
+    margin: 0 0 16px 0;
+    color: #64748b;
+    font-size: 13px;
+  }
+}
+
+.modalFooter {
+  padding: 16px 24px;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  background-color: #f9fafb;
+
+  button {
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s;
+  }
+
+  .cancelBtn {
+    background-color: white;
+    border: 1px solid #d1d5db;
+    color: #374151;
+
+    &:hover {
+      background-color: #f3f4f6;
+    }
+  }
+
+  .saveBtn {
+    background-color: $color-primary;
+    border: 1px solid $color-primary;
+    color: white;
+
+    &:hover {
+      background-color: darken($color-primary, 10%);
+    }
+  }
+}
+
+/* === SEAT CONFIG MODAL === */
+.seatModal {
+  max-width: 800px;
+}
+
+.seatGuide {
+  margin-bottom: 20px;
+  background-color: #f8fafc;
+  padding: 15px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    margin-bottom: 8px;
+  }
+
+  .legendItem {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: #334155;
+    font-weight: 500;
+  }
+
+  .helperText {
+    margin: 0;
+    font-size: 13px;
+    color: #64748b;
+    font-style: italic;
+  }
+}
+
+.screenArea {
+  margin-bottom: 30px;
+  display: flex;
+  justify-content: center;
+
+  .screen {
+    width: 80%;
+    height: 30px;
+    background: linear-gradient(to bottom, #cbd5e1, #f1f5f9);
+    border: 1px solid #94a3b8;
+    border-radius: 50% / 100% 100% 0 0; /* Hiệu ứng màn hình cong */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    color: #64748b;
+    font-size: 14px;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+  }
+}
+
+.seatGridContainer {
+  display: flex;
+  justify-content: center;
+  overflow-x: auto;
+  padding-bottom: 10px;
+}
+
+.seatGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.seatRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  .rowLabel {
+    width: 24px;
+    font-weight: bold;
+    color: #475569;
+    text-align: right;
+    margin-right: 10px;
+  }
+}
+
+.seatBox {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px 6px 4px 4px; /* Hình dáng ghế */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: white;
+  cursor: pointer;
+  transition: transform 0.1s, opacity 0.2s;
+  user-select: none;
+
+  &:hover {
+    transform: scale(1.1);
+  }
+
+  &.seatStandard {
+    background-color: #cbd5e1; // Xám nhạt
+    color: #334155;
+    border: 1px solid #94a3b8;
+  }
+
+  &.seatVip {
+    background-color: #ef4444; // Đỏ
+    border: 1px solid #dc2626;
+  }
+
+  &.seatCouple {
+    background-color: #ec4899; // Hồng
+    border: 1px solid #db2777;
+    width: 72px; /* Ghế đôi bự gấp đôi */
+  }
+
+  &.seatBroken {
+    background-color: #f1f5f9; // Xám rất nhạt
+    color: #cbd5e1;
+    border: 1px dashed #cbd5e1;
+    cursor: not-allowed;
+
+    &:hover {
+      transform: none;
+    }
+  }
+}

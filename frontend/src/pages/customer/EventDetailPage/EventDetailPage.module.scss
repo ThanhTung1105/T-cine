@@ -1,0 +1,172 @@
+@use '../../../styles/variables' as *;
+@use '../../../styles/mixins' as *;
+
+.eventDetailPage {
+  background-color: #fdfcf0;
+  min-height: 100vh;
+  padding-bottom: 60px;
+}
+
+.container {
+  max-width: $container-max;
+  margin: 0 auto;
+  padding: 0 $container-padding;
+}
+
+/* === BREADCRUMB === */
+.breadcrumbWrapper {
+  background-color: #f4f3e6;
+  border-bottom: 1px solid #e1e1e1;
+  padding: 10px 0;
+  
+  .breadcrumb {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: #666;
+    
+    li {
+      display: flex;
+      align-items: center;
+      
+      a {
+        color: #666;
+        text-decoration: none;
+        transition: color $transition-fast;
+        display: flex;
+        align-items: center;
+        
+        &:hover {
+          color: $color-primary;
+        }
+        
+        .homeIcon {
+          font-size: 18px;
+        }
+      }
+      
+      .separator {
+        font-size: 16px;
+        color: #999;
+      }
+      
+      &.active {
+        font-weight: bold;
+        color: #333;
+        text-transform: uppercase;
+        text-decoration: underline;
+      }
+    }
+  }
+}
+
+/* === PAGE CONTENT === */
+.pageContent {
+  padding: 40px 0;
+}
+
+.eventTitle {
+  font-size: 26px;
+  font-weight: 500;
+  color: $color-primary; // Thay màu đỏ thành màu xanh dương chủ đạo của T-CINE
+  margin: 0 0 30px 0;
+  text-transform: uppercase;
+}
+
+/* === EVENT BODY === */
+.eventBody {
+  display: flex;
+  gap: 40px;
+  align-items: flex-start;
+  
+  @include responsive(lg) {
+    flex-direction: column;
+    align-items: center;
+  }
+}
+
+.posterColumn {
+  flex: 0 0 400px; // Cột trái chiếm 400px
+  
+  @include responsive(lg) {
+    flex: auto;
+    width: 100%;
+    max-width: 500px;
+  }
+  
+  .posterPlaceholder {
+    width: 100%;
+    aspect-ratio: 3 / 4;
+    background-color: #d8e2eb;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    font-weight: bold;
+    color: #555;
+    box-shadow: $shadow-md;
+  }
+}
+
+.contentColumn {
+  flex: 1;
+  background-color: transparent; // Nền trong suốt
+  
+  /* Phần style này sẽ áp dụng cho HTML trả về từ CKEditor của Admin */
+  .richTextContent {
+    font-size: 15px;
+    line-height: 1.6;
+    color: #333;
+    
+    p {
+      margin-bottom: 15px;
+    }
+    
+    ul {
+      margin-left: 20px;
+      margin-bottom: 20px;
+      
+      li {
+        margin-bottom: 8px;
+        position: relative;
+        list-style-type: none;
+        
+        &::before {
+          content: '-';
+          position: absolute;
+          left: -15px;
+        }
+      }
+    }
+    
+    strong {
+      font-weight: bold;
+    }
+    
+    em {
+      font-style: italic;
+      color: #555;
+    }
+    
+    /* Các class highlight để mô phỏng text màu */
+    .highlightText {
+      color: $color-primary;
+      cursor: pointer;
+      
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+    
+    .highlightTextBold {
+      color: $color-primary;
+      font-weight: 900;
+      font-size: 18px;
+      text-transform: uppercase;
+    }
+  }
+}

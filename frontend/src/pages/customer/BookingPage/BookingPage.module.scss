@@ -1,0 +1,470 @@
+@use '../../../styles/variables' as *;
+@use '../../../styles/mixins' as *;
+
+.bookingPage {
+  background-color: #fdfcf0;
+  min-height: 100vh;
+  padding-bottom: 60px;
+}
+
+.container {
+  max-width: $container-max;
+  margin: 0 auto;
+  padding: 0 $container-padding;
+}
+
+/* === 1. STEPPER NAVIGATION === */
+.stepperContainer {
+  background-color: white;
+  border-bottom: 1px solid #e1e1e1;
+  padding: 20px 0;
+  margin-bottom: 30px;
+}
+
+.stepperWrapper {
+  max-width: 800px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  
+  .stepLine {
+    flex: 1;
+    height: 2px;
+    background-color: #e1e1e1;
+    margin: 0 15px;
+    margin-top: -20px; // align with circles
+  }
+  
+  .step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    opacity: 0.5;
+    
+    &.active {
+      opacity: 1;
+      
+      .stepCircle {
+        background-color: $color-primary;
+        color: white;
+        border-color: $color-primary;
+      }
+      
+      .stepLabel {
+        color: $color-primary;
+        font-weight: 700;
+      }
+    }
+    
+    .stepCircle {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: 2px solid #ccc;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 16px;
+      color: #666;
+      background-color: white;
+      z-index: 2;
+    }
+    
+    .stepLabel {
+      font-size: 13px;
+      color: #666;
+      text-align: center;
+      max-width: 100px;
+    }
+  }
+}
+
+/* === PAGE TITLE === */
+.pageMainTitle {
+  font-size: 24px;
+  font-weight: bold;
+  text-align: center;
+  margin-bottom: 30px;
+  color: #333;
+}
+
+/* === 2. MOVIE INFO CARD === */
+.movieInfoCard {
+  display: flex;
+  background-color: white;
+  border-radius: 8px;
+  padding: 20px;
+  gap: 25px;
+  box-shadow: $shadow-sm;
+  margin-bottom: 30px;
+  border: 1px solid #e1e1e1;
+  
+  @include responsive(sm) {
+    flex-direction: column;
+  }
+  
+  .posterPlaceholder {
+    width: 150px;
+    aspect-ratio: 2/3;
+    background-color: #d8e2eb;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: #666;
+    font-weight: bold;
+    border-radius: 4px;
+    flex-shrink: 0;
+    
+    @include responsive(sm) {
+      width: 120px;
+      margin: 0 auto;
+    }
+  }
+  
+  .movieDetails {
+    flex: 1;
+    
+    .movieTitle {
+      font-size: 22px;
+      color: $color-primary; // T-CINE Blue
+      margin: 0 0 10px 0;
+      font-weight: 700;
+    }
+    
+    .movieDesc {
+      font-size: 14px;
+      color: #555;
+      margin-bottom: 15px;
+      line-height: 1.5;
+    }
+    
+    .metaList {
+      list-style: none;
+      padding: 0;
+      margin: 0 0 20px 0;
+      font-size: 14px;
+      color: #333;
+      
+      li {
+        margin-bottom: 5px;
+        
+        strong {
+          color: #666;
+          display: inline-block;
+          width: 90px;
+        }
+      }
+    }
+    
+    .trailerBtn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background-color: transparent;
+      border: 1px solid $color-primary;
+      color: $color-primary;
+      padding: 8px 15px;
+      border-radius: 20px;
+      font-weight: bold;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all $transition-fast;
+      
+      .icon {
+        font-size: 18px;
+      }
+      
+      &:hover {
+        background-color: $color-primary;
+        color: white;
+      }
+    }
+  }
+}
+
+/* === MAIN BOOKING CONTENT SPLIT === */
+.bookingContent {
+  display: flex;
+  gap: 30px;
+  align-items: flex-start;
+  margin-bottom: 50px;
+  
+  @include responsive(lg) {
+    flex-direction: column-reverse; // Calendar on top on mobile
+  }
+}
+
+.mainColumn {
+  flex: 1;
+}
+
+.sideColumn {
+  width: 350px;
+  flex-shrink: 0;
+  
+  @include responsive(lg) {
+    width: 100%;
+  }
+}
+
+/* === CINEMA LIST (LEFT) === */
+.cinemaList {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.cinemaItem {
+  background-color: white;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: $shadow-sm;
+  border: 1px solid #e1e1e1;
+  
+  .cinemaHeader {
+    display: flex;
+    align-items: flex-start;
+    gap: 15px;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px dashed #ccc;
+    
+    .locationIcon {
+      color: $color-primary;
+      font-size: 32px;
+      background-color: rgba($color-primary, 0.1);
+      padding: 5px;
+      border-radius: 50%;
+    }
+    
+    .cinemaName {
+      font-size: 18px;
+      margin: 0 0 5px 0;
+      color: #333;
+    }
+    
+    .cinemaAddress {
+      font-size: 13px;
+      color: #777;
+      margin: 0;
+    }
+  }
+  
+  .formatLabel {
+    font-size: 14px;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 15px;
+  }
+  
+  .showtimeGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 15px;
+    
+    .timeBtn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      padding: 10px;
+      text-decoration: none;
+      color: #333;
+      transition: all $transition-fast;
+      
+      .time {
+        font-size: 18px;
+        font-weight: bold;
+        color: #333;
+      }
+      
+      .seats {
+        font-size: 11px;
+        color: #00b156; // Green for available
+        margin-top: 4px;
+      }
+      
+      &:hover {
+        border-color: $color-primary;
+        background-color: rgba($color-primary, 0.05);
+        
+        .time {
+          color: $color-primary;
+        }
+      }
+    }
+  }
+}
+
+/* === CALENDAR (RIGHT) === */
+.calendarWidget {
+  background-color: #f2f0e4;
+  border-radius: 8px;
+  padding: 20px;
+  border: 1px solid #e1e1e1;
+  position: sticky;
+  top: 20px;
+  
+  .calendarHeader {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+    
+    .calIcon {
+      color: $color-primary;
+      font-size: 24px;
+    }
+    
+    h3 {
+      margin: 0;
+      font-size: 18px;
+      color: #333;
+    }
+  }
+  
+  .dateSelector {
+    margin-bottom: 20px;
+    overflow-x: auto;
+    padding-bottom: 10px;
+    
+    .dateList {
+      display: flex;
+      gap: 10px;
+      
+      .dateBtn {
+        min-width: 60px;
+        height: 70px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background-color: white;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all $transition-fast;
+        flex-shrink: 0;
+        
+        .dayNum {
+          font-size: 22px;
+          font-weight: bold;
+          color: #333;
+        }
+        
+        .dayStr {
+          font-size: 12px;
+          color: #777;
+        }
+        
+        &:hover {
+          border-color: $color-primary;
+        }
+        
+        &.active {
+          background-color: $color-primary;
+          border-color: $color-primary;
+          
+          .dayNum, .dayStr {
+            color: white;
+          }
+        }
+      }
+    }
+  }
+  
+  .monthCalendarPlaceholder {
+    background-color: white;
+    height: 250px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: #999;
+    font-size: 14px;
+    border: 1px dashed #ccc;
+  }
+}
+
+/* === 3. SPECIAL OFFERS === */
+.specialOffersSection {
+  background-color: #f2f0e4;
+  border-radius: 8px;
+  padding: 30px;
+  margin-top: 20px;
+  
+  .offerHeader {
+    text-align: center;
+    margin-bottom: 30px;
+    border-bottom: 2px solid #ccc;
+    line-height: 0.1em;
+    
+    .offerTitleBadge {
+      background: #f2f0e4;
+      padding: 0 20px;
+      font-size: 18px;
+      font-weight: bold;
+      color: #333;
+      border: 1px solid #ccc;
+      border-radius: 20px;
+      display: inline-block;
+      line-height: 2;
+    }
+  }
+  
+  .offerGrid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+    
+    @include responsive(md) {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    
+    @include responsive(sm) {
+      grid-template-columns: repeat(1, 1fr);
+    }
+    
+    .offerCard {
+      background-color: white;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: $shadow-sm;
+      padding-bottom: 15px;
+      
+      .offerImgPlaceholder {
+        width: 100%;
+        aspect-ratio: 1/1;
+        background-color: #d8e2eb;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #666;
+        font-weight: bold;
+        text-align: center;
+        margin-bottom: 15px;
+      }
+      
+      .offerTitle {
+        font-size: 14px;
+        font-weight: bold;
+        margin: 0 15px 10px;
+        color: #333;
+      }
+      
+      .offerDesc {
+        font-size: 12px;
+        color: #777;
+        margin: 0 15px;
+        line-height: 1.4;
+      }
+    }
+  }
+}

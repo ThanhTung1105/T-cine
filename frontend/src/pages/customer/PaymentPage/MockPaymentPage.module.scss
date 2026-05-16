@@ -1,0 +1,154 @@
+.mockPaymentPage {
+  min-height: 100vh;
+  background-color: #f0f2f5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.paymentBox {
+  background-color: white;
+  width: 100%;
+  max-width: 450px;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  border-top: 5px solid var(--theme-color);
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 30px 20px 20px;
+  background-color: #fafafa;
+  border-bottom: 1px dashed #eee;
+
+  .logo {
+    width: 60px;
+    height: 60px;
+    object-fit: contain;
+    margin-bottom: 15px;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  }
+
+  h2 {
+    margin: 0;
+    font-size: 18px;
+    color: #333;
+    font-weight: 700;
+  }
+}
+
+.content {
+  padding: 30px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.instruction {
+  margin: 0 0 20px 0;
+  font-size: 14px;
+  color: #666;
+  text-align: center;
+}
+
+.qrWrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 30px;
+  
+  .qrCode {
+    width: 200px;
+    height: 200px;
+    border: 1px solid #eee;
+    padding: 10px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+  }
+  
+  .amount {
+    font-size: 24px;
+    font-weight: bold;
+    color: var(--theme-color);
+  }
+}
+
+.orderInfo {
+  width: 100%;
+  background-color: #f9f9f9;
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+
+  .infoRow {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    font-size: 14px;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+
+    span {
+      color: #666;
+    }
+
+    strong {
+      color: #333;
+    }
+  }
+}
+
+.timer {
+  font-size: 14px;
+  color: #666;
+  
+  strong {
+    color: #e53935;
+    font-size: 16px;
+  }
+}
+
+.actions {
+  padding: 0 20px 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  button {
+    width: 100%;
+    padding: 12px;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+    font-size: 14px;
+  }
+
+  .successBtn {
+    background-color: var(--theme-color);
+    color: white;
+
+    &:hover {
+      filter: brightness(1.1);
+    }
+  }
+
+  .cancelBtn {
+    background-color: transparent;
+    color: #666;
+    border: 1px solid #ccc;
+
+    &:hover {
+      background-color: #f5f5f5;
+      color: #333;
+    }
+  }
+}

@@ -1,0 +1,429 @@
+@use '../../../styles/variables' as *;
+@use '../../../styles/mixins' as *;
+
+.concessionPage {
+  background-color: #fdfcf0;
+  min-height: 100vh;
+  padding-bottom: 60px;
+}
+
+.container {
+  max-width: $container-max;
+  margin: 0 auto;
+  padding: 0 $container-padding;
+}
+
+/* === STEPPER NAVIGATION === */
+.stepperContainer {
+  background-color: white;
+  border-bottom: 1px solid #e1e1e1;
+  padding: 20px 0;
+  margin-bottom: 30px;
+}
+
+.stepperWrapper {
+  max-width: 800px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  
+  .stepLine {
+    flex: 1;
+    height: 2px;
+    background-color: #e1e1e1;
+    margin: 0 15px;
+    margin-top: -20px; 
+    
+    &.active {
+      background-color: $color-primary;
+    }
+  }
+  
+  .step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    opacity: 0.5;
+    
+    &.active {
+      opacity: 1;
+      
+      .stepCircle {
+        background-color: white;
+        color: $color-primary;
+        border-color: $color-primary;
+        border-width: 3px;
+      }
+      
+      .stepLabel {
+        color: $color-primary;
+        font-weight: 700;
+      }
+    }
+    
+    .stepCircle {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: 2px solid #ccc;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 16px;
+      color: #666;
+      background-color: white;
+      z-index: 2;
+    }
+    
+    .stepLabel {
+      font-size: 13px;
+      color: #666;
+      text-align: center;
+      max-width: 100px;
+    }
+  }
+}
+
+/* === PAGE TITLE === */
+.pageMainTitle {
+  font-size: 24px;
+  font-weight: bold;
+  text-align: center;
+  margin-bottom: 30px;
+  color: #333;
+}
+
+/* === MAIN CONTENT === */
+.mainContent {
+  display: flex;
+  gap: 30px;
+  align-items: flex-start;
+  margin-bottom: 50px;
+  
+  @include responsive(lg) {
+    flex-direction: column;
+  }
+}
+
+/* === COMBO COLUMN === */
+.comboColumn {
+  flex: 1;
+  background-color: white;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: $shadow-sm;
+  border: 1px solid #e1e1e1;
+}
+
+.comboTabContainer {
+  border-bottom: 1px dashed #ccc;
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+  display: flex;
+  justify-content: center;
+  
+  .comboTab {
+    padding: 10px 30px;
+    border: 1px solid $color-primary;
+    color: $color-primary;
+    font-weight: bold;
+    border-radius: 4px;
+    text-transform: uppercase;
+  }
+}
+
+.comboList {
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+}
+
+.comboItem {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px dashed #eee;
+  
+  &:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+  
+  @include responsive(sm) {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+  }
+  
+  .comboImagePlaceholder {
+    width: 80px;
+    aspect-ratio: 1/1;
+    background-color: #d8e2eb;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    font-size: 11px;
+    color: #666;
+    font-weight: bold;
+    border-radius: 8px;
+    flex-shrink: 0;
+    
+    @include responsive(sm) {
+      margin: 0 auto;
+    }
+  }
+  
+  .comboInfo {
+    flex: 1;
+    
+    .comboName {
+      font-size: 16px;
+      color: #333;
+      margin: 0 0 5px 0;
+    }
+    
+    .comboDesc {
+      font-size: 13px;
+      color: #666;
+      margin: 0 0 15px 0;
+    }
+    
+    .quantityControl {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      
+      @include responsive(sm) {
+        justify-content: center;
+      }
+      
+      .qtyBtn {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background-color: #e0e0e0;
+        border: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        cursor: pointer;
+        transition: background-color $transition-fast;
+        
+        &:hover:not(:disabled) {
+          background-color: #84d62b;
+          color: white;
+        }
+        
+        &:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+      }
+      
+      .qtyValue {
+        font-weight: bold;
+        min-width: 20px;
+        text-align: center;
+      }
+    }
+  }
+  
+  .comboPriceWrapper {
+    text-align: right;
+    
+    @include responsive(sm) {
+      text-align: center;
+      margin-top: 10px;
+    }
+    
+    .originalPrice {
+      font-size: 13px;
+      color: #999;
+      text-decoration: line-through;
+      margin-bottom: 5px;
+    }
+    
+    .currentPrice {
+      font-size: 16px;
+      font-weight: bold;
+      color: #333;
+    }
+  }
+}
+
+/* === SUMMARY COLUMN (RIGHT) === */
+.summaryColumn {
+  width: 320px;
+  flex-shrink: 0;
+  
+  @include responsive(lg) {
+    width: 100%;
+  }
+}
+
+.summaryCard {
+  background-color: white;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: $shadow-sm;
+  border: 1px solid #e1e1e1;
+  position: sticky;
+  top: 20px;
+  
+  .cinemaName {
+    font-size: 16px;
+    font-weight: bold;
+    color: #333;
+    margin: 0 0 5px 0;
+  }
+  
+  .showtimeInfo {
+    font-size: 13px;
+    color: #666;
+    margin: 0;
+  }
+  
+  .divider {
+    height: 1px;
+    background-color: #eee;
+    margin: 15px 0;
+  }
+  
+  .summaryMovieTitle {
+    font-size: 18px;
+    color: $color-primary;
+    margin: 0 0 10px 0;
+    font-weight: 700;
+  }
+  
+  .tags {
+    display: flex;
+    gap: 8px;
+    
+    .tag {
+      background-color: #2dd4bf;
+      color: white;
+      font-size: 11px;
+      padding: 2px 6px;
+      border-radius: 2px;
+      font-weight: bold;
+    }
+    
+    .tagDark {
+      background-color: #333;
+      color: white;
+      font-size: 11px;
+      padding: 2px 6px;
+      border-radius: 2px;
+      font-weight: bold;
+    }
+  }
+  
+  .ticketSummary, .comboSummary {
+    .ticketRow, .comboRow {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 10px;
+      
+      &:last-child {
+        margin-bottom: 0;
+      }
+      
+      .ticketType, .comboType {
+        p {
+          margin: 0 0 4px 0;
+          font-size: 13px;
+          color: #333;
+        }
+        
+        .selectedSeats {
+          font-size: 13px;
+          color: #666;
+        }
+      }
+      
+      .ticketPrice, .comboPrice {
+        font-size: 13px;
+        color: #666;
+        white-space: nowrap;
+      }
+    }
+  }
+  
+  .totalRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin: 20px 0;
+    
+    .totalLabel {
+      font-size: 16px;
+      color: #333;
+      display: flex;
+      flex-direction: column;
+      
+      small {
+        font-size: 11px;
+        color: #999;
+      }
+    }
+    
+    .totalAmount {
+      font-size: 20px;
+      font-weight: bold;
+      color: #333;
+    }
+  }
+  
+  .continueBtn {
+    display: block;
+    width: 100%;
+    text-align: center;
+    background-color: #84d62b; // Green color like in BHD Star design
+    color: white;
+    padding: 12px;
+    border-radius: 4px;
+    font-weight: bold;
+    text-decoration: none;
+    transition: background-color $transition-fast;
+    margin-bottom: 20px;
+    
+    &:hover {
+      background-color: darken(#84d62b, 10%);
+    }
+  }
+  
+  .countdown {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    
+    .backLink {
+      font-size: 14px;
+      color: #84d62b;
+      text-decoration: none;
+      
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+    
+    p {
+      margin: 0;
+      font-size: 13px;
+      color: #666;
+      
+      strong {
+        color: #ef4444;
+      }
+    }
+  }
+}

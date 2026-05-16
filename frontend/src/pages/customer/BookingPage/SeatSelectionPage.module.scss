@@ -1,0 +1,554 @@
+@use '../../../styles/variables' as *;
+@use '../../../styles/mixins' as *;
+
+.seatSelectionPage {
+  background-color: #fdfcf0;
+  min-height: 100vh;
+  padding-bottom: 60px;
+}
+
+.container {
+  max-width: $container-max;
+  margin: 0 auto;
+  padding: 0 $container-padding;
+}
+
+/* === 1. STEPPER NAVIGATION === */
+.stepperContainer {
+  background-color: white;
+  border-bottom: 1px solid #e1e1e1;
+  padding: 20px 0;
+  margin-bottom: 30px;
+}
+
+.stepperWrapper {
+  max-width: 800px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  
+  .stepLine {
+    flex: 1;
+    height: 2px;
+    background-color: #e1e1e1;
+    margin: 0 15px;
+    margin-top: -20px; 
+    
+    &.active {
+      background-color: $color-primary; // T-CINE Blue
+    }
+  }
+  
+  .step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    opacity: 0.5;
+    
+    &.active {
+      opacity: 1;
+      
+      .stepCircle {
+        background-color: white;
+        color: $color-primary;
+        border-color: $color-primary;
+        border-width: 3px;
+      }
+      
+      .stepLabel {
+        color: $color-primary;
+        font-weight: 700;
+      }
+    }
+    
+    .stepCircle {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: 2px solid #ccc;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 16px;
+      color: #666;
+      background-color: white;
+      z-index: 2;
+    }
+    
+    .stepLabel {
+      font-size: 13px;
+      color: #666;
+      text-align: center;
+      max-width: 100px;
+    }
+  }
+}
+
+/* === PAGE TITLE === */
+.pageMainTitle {
+  font-size: 24px;
+  font-weight: bold;
+  text-align: center;
+  margin-bottom: 30px;
+  color: #333;
+}
+
+/* === 2. MOVIE INFO CARD === */
+.movieInfoCard {
+  display: flex;
+  background-color: white;
+  border-radius: 8px;
+  padding: 20px;
+  gap: 25px;
+  box-shadow: $shadow-sm;
+  margin-bottom: 30px;
+  border: 1px solid #e1e1e1;
+  
+  @include responsive(sm) {
+    flex-direction: column;
+  }
+  
+  .posterPlaceholder {
+    width: 150px;
+    aspect-ratio: 2/3;
+    background-color: #d8e2eb;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: #666;
+    font-weight: bold;
+    border-radius: 4px;
+    flex-shrink: 0;
+    
+    @include responsive(sm) {
+      width: 120px;
+      margin: 0 auto;
+    }
+  }
+  
+  .movieDetails {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    
+    .movieTitle {
+      font-size: 22px;
+      color: $color-primary;
+      margin: 0 0 15px 0;
+      font-weight: 700;
+    }
+    
+    .metaList {
+      list-style: none;
+      padding: 0;
+      margin: 0 0 20px 0;
+      font-size: 14px;
+      color: #333;
+      line-height: 1.8;
+      
+      li {
+        strong {
+          color: #666;
+          display: inline-block;
+          min-width: 80px;
+        }
+      }
+    }
+    
+    .backToStep1Btn {
+      display: inline-block;
+      align-self: flex-start;
+      margin-top: auto;
+      border: 1px solid #ccc;
+      color: #666;
+      padding: 6px 15px;
+      border-radius: 20px;
+      font-weight: bold;
+      font-size: 13px;
+      text-decoration: none;
+      transition: all $transition-fast;
+      
+      &:hover {
+        background-color: #f5f5f5;
+        color: #333;
+        border-color: #999;
+      }
+    }
+  }
+}
+
+/* === MAIN BOOKING CONTENT === */
+.mainContent {
+  display: flex;
+  gap: 30px;
+  align-items: flex-start;
+  margin-bottom: 50px;
+  
+  @include responsive(lg) {
+    flex-direction: column;
+  }
+}
+
+/* === SEAT MAP COLUMN === */
+.seatMapColumn {
+  flex: 1;
+  background-color: white;
+  border-radius: 8px;
+  padding: 30px;
+  box-shadow: $shadow-sm;
+  border: 1px solid #e1e1e1;
+  overflow-x: auto;
+}
+
+.screenWrapper {
+  text-align: center;
+  margin-bottom: 40px;
+  
+  .screenCurve {
+    height: 30px;
+    border-top: 4px solid #84d62b; // Screen color from design
+    border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+    margin: 0 auto 10px;
+    width: 80%;
+  }
+  
+  p {
+    margin: 0;
+    font-size: 14px;
+    color: #999;
+    text-transform: uppercase;
+  }
+}
+
+.legend {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin-bottom: 30px;
+  flex-wrap: wrap;
+  
+  .legendItem {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: #666;
+    
+    .seatBox {
+      width: 24px;
+      height: 24px;
+      border-radius: 4px;
+      display: inline-block;
+      
+      &.standard { background-color: #d1d5db; }
+      &.vip { background-color: #fcd34d; }
+      &.couple { background-color: #2dd4bf; width: 48px; }
+      &.selected { background-color: #84d62b; }
+      &.sold { background-color: #ef4444; }
+    }
+  }
+}
+
+.seatGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 600px; // Ensure it doesn't squish too much
+  
+  .seatRow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    
+    .rowLabel {
+      width: 20px;
+      text-align: center;
+      font-weight: bold;
+      color: #999;
+      font-size: 14px;
+    }
+    
+    .seatBlockLeft, .seatBlockCenter, .seatBlockRight {
+      display: flex;
+      gap: 5px;
+    }
+    
+    .seatBlockLeftCouple, .seatBlockCenterCouple, .seatBlockRightCouple {
+      display: flex;
+      gap: 10px; // Wider gap for couples
+    }
+  }
+  
+  .seatRowSpacer {
+    height: 15px; // Gap before Couple row
+  }
+  
+  .seat {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px 6px 4px 4px; // Shaped like a chair
+    border: none;
+    background-color: #d1d5db; // Standard
+    cursor: pointer;
+    transition: transform 0.1s, box-shadow 0.1s;
+    font-size: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    
+    &:hover:not(.sold) {
+      transform: scale(1.1);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+    
+    &.vip { background-color: #fcd34d; }
+    &.couple { 
+      background-color: #2dd4bf; 
+      width: 60px; // Double width
+      border-radius: 8px 8px 4px 4px;
+      font-size: 16px;
+    }
+    &.selected { background-color: #84d62b; }
+    &.sold { 
+      background-color: #ef4444; 
+      cursor: not-allowed;
+      opacity: 0.8;
+    }
+  }
+}
+
+/* === SUMMARY COLUMN (RIGHT) === */
+.summaryColumn {
+  width: 300px;
+  flex-shrink: 0;
+  
+  @include responsive(lg) {
+    width: 100%;
+  }
+}
+
+.summaryCard {
+  background-color: white;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: $shadow-sm;
+  border: 1px solid #e1e1e1;
+  position: sticky;
+  top: 20px;
+  
+  .cinemaName {
+    font-size: 16px;
+    font-weight: bold;
+    color: #333;
+    margin: 0 0 5px 0;
+  }
+  
+  .showtimeInfo {
+    font-size: 13px;
+    color: #666;
+    margin: 0;
+  }
+  
+  .divider {
+    height: 1px;
+    background-color: #eee;
+    margin: 15px 0;
+  }
+  
+  .summaryMovieTitle {
+    font-size: 18px;
+    color: $color-primary;
+    margin: 0 0 10px 0;
+    font-weight: 700;
+  }
+  
+  .tags {
+    display: flex;
+    gap: 8px;
+    
+    .tag {
+      background-color: #2dd4bf;
+      color: white;
+      font-size: 11px;
+      padding: 2px 6px;
+      border-radius: 2px;
+      font-weight: bold;
+    }
+    
+    .tagDark {
+      background-color: #333;
+      color: white;
+      font-size: 11px;
+      padding: 2px 6px;
+      border-radius: 2px;
+      font-weight: bold;
+    }
+  }
+  
+  .selectionStatus {
+    min-height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
+    .emptyText {
+      font-size: 13px;
+      color: #ef4444;
+      text-align: center;
+      margin: 0;
+      padding: 10px;
+      background-color: rgba(#ef4444, 0.05);
+      border-radius: 4px;
+      width: 100%;
+    }
+    
+    .selectedSeatsInfo {
+      width: 100%;
+      
+      p {
+        margin: 0 0 5px 0;
+        font-size: 14px;
+        color: #333;
+        display: flex;
+        justify-content: space-between;
+        
+        strong {
+          color: $color-primary;
+        }
+      }
+    }
+  }
+  
+  .countdown {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    
+    .backLink {
+      font-size: 13px;
+      color: #2dd4bf;
+      text-decoration: none;
+      
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+    
+    p {
+      margin: 0;
+      font-size: 13px;
+      color: #666;
+      
+      strong {
+        color: #ef4444;
+      }
+    }
+  }
+  
+  .continueBtn {
+    display: block;
+    width: 100%;
+    text-align: center;
+    background-color: $color-primary;
+    color: white;
+    padding: 12px;
+    border-radius: 4px;
+    font-weight: bold;
+    text-decoration: none;
+    transition: background-color $transition-fast;
+    
+    &:hover {
+      background-color: $color-primary-dark;
+    }
+    
+    &.disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+  }
+}
+
+/* === 3. SPECIAL OFFERS === */
+.specialOffersSection {
+  background-color: #f2f0e4;
+  border-radius: 8px;
+  padding: 30px;
+  margin-top: 20px;
+  
+  .offerHeader {
+    text-align: center;
+    margin-bottom: 30px;
+    border-bottom: 2px solid #ccc;
+    line-height: 0.1em;
+    
+    .offerTitleBadge {
+      background: #f2f0e4;
+      padding: 0 20px;
+      font-size: 18px;
+      font-weight: bold;
+      color: #333;
+      border: 1px solid #ccc;
+      border-radius: 20px;
+      display: inline-block;
+      line-height: 2;
+    }
+  }
+  
+  .offerGrid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+    
+    @include responsive(md) {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    
+    @include responsive(sm) {
+      grid-template-columns: repeat(1, 1fr);
+    }
+    
+    .offerCard {
+      background-color: white;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: $shadow-sm;
+      padding-bottom: 15px;
+      
+      .offerImgPlaceholder {
+        width: 100%;
+        aspect-ratio: 1/1;
+        background-color: #d8e2eb;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #666;
+        font-weight: bold;
+        text-align: center;
+        margin-bottom: 15px;
+      }
+      
+      .offerTitle {
+        font-size: 14px;
+        font-weight: bold;
+        margin: 0 15px 10px;
+        color: #333;
+      }
+      
+      .offerDesc {
+        font-size: 12px;
+        color: #777;
+        margin: 0 15px;
+        line-height: 1.4;
+      }
+    }
+  }
+}

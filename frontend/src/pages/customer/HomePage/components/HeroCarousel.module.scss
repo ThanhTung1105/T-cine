@@ -1,0 +1,49 @@
+@use '../../../../styles/variables' as *;
+@use '../../../../styles/mixins' as *;
+
+.carouselWrapper {
+  width: 100%;
+  position: relative;
+}
+
+.swiperContainer {
+  width: 100%;
+  height: 450px; // Chiều cao cố định cho banner
+  
+  @include responsive(md) {
+    height: 300px;
+  }
+  
+  @include responsive(sm) {
+    height: 200px;
+  }
+}
+
+.slidePlaceholder {
+  width: 100%;
+  height: 100%;
+  background-color: #d8e2eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #555;
+  font-size: 24px;
+  font-weight: bold;
+  border: 1px dashed #999;
+}
+
+/* Tùy chỉnh màu của Swiper pagination/navigation để hợp tông màu Xanh dương */
+:global(.swiper-pagination-bullet-active) {
+  background-color: $color-primary !important;
+}
+
+:global(.swiper-button-next),
+:global(.swiper-button-prev) {
+  color: white !important;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+  
+  &::after {
+    font-size: 32px !important;
+    font-weight: bold;
+  }
+}

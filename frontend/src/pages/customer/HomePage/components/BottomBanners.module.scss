@@ -1,0 +1,39 @@
+@use '../../../../styles/variables' as *;
+@use '../../../../styles/mixins' as *;
+
+.bottomBannersWrapper {
+  padding: 40px 0; // Thêm padding top để cân bằng khoảng cách
+}
+
+.bannerGrid {
+  display: flex;
+  gap: 20px;
+  
+  @include responsive(md) {
+    flex-direction: column;
+  }
+}
+
+.bannerItem {
+  flex: 1; // Cho 2 banner vuông 2 bên
+  aspect-ratio: 1 / 1;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: $shadow-sm;
+  border: 1px solid #ccc;
+  
+  &.wide {
+    flex: 2; // Banner ngang ở giữa rộng gấp đôi
+    aspect-ratio: 2 / 1;
+    
+    @include responsive(md) {
+      aspect-ratio: auto;
+      height: 200px;
+    }
+  }
+  
+  @include responsive(md) {
+    aspect-ratio: auto;
+    height: 300px;
+  }
+}

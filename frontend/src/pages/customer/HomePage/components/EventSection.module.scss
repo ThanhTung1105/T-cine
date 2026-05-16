@@ -1,0 +1,74 @@
+@use '../../../../styles/variables' as *;
+@use '../../../../styles/mixins' as *;
+
+.eventSectionWrapper {
+  padding: 40px 0; // Cân bằng khoảng cách trên dưới bằng nhau
+}
+
+.tabContainer {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 30px;
+}
+
+.tabs {
+  display: flex;
+  background-color: #fff;
+  border: 1px solid #ddd;
+  border-radius: 30px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  
+  .tabBtn {
+    background: none;
+    border: none;
+    padding: 10px 30px;
+    font-size: 14px;
+    font-weight: 700;
+    color: #666;
+    cursor: pointer;
+    transition: all $transition-fast;
+    
+    &.active {
+      background-color: $color-primary; // Nền tab active chuyển sang primary blue
+      color: white;
+    }
+    
+    &:not(.active):hover {
+      background-color: #f5f5f5;
+    }
+  }
+}
+
+.eventGridWrapper {
+  position: relative;
+  padding: 0 40px;
+}
+
+.eventGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 15px;
+  
+  @include responsive(md) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  @include responsive(sm) {
+    grid-template-columns: repeat(1, 1fr);
+  }
+}
+
+.eventCard {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: $shadow-sm;
+  transition: transform $transition-fast;
+  
+  &:hover {
+    transform: translateY(-5px);
+    box-shadow: $shadow-md;
+  }
+}

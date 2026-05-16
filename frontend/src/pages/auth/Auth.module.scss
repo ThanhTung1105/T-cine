@@ -1,0 +1,195 @@
+@use '../../styles/variables' as *;
+@use '../../styles/mixins' as *;
+
+.authPage {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f0f2f5;
+  background-image: url('https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=2070&auto=format&fit=crop'); // Cinema background
+  background-size: cover;
+  background-position: center;
+  position: relative;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.6); // Overlay tối
+  }
+}
+
+.authContainer {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 450px;
+  padding: 20px;
+}
+
+.authCard {
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+  border-top: 5px solid $color-primary;
+}
+
+.authHeader {
+  padding: 30px 30px 15px;
+  text-align: center;
+  
+  .logo {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background-color: $color-primary;
+    color: white;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    font-size: 24px;
+    font-weight: 900;
+    margin-bottom: 15px;
+  }
+  
+  h2 {
+    margin: 0;
+    font-size: 24px;
+    color: #333;
+    font-weight: bold;
+  }
+  
+  p {
+    margin: 10px 0 0;
+    color: #666;
+    font-size: 14px;
+  }
+}
+
+.authForm {
+  padding: 20px 30px 30px;
+  
+  .formGroup {
+    margin-bottom: 20px;
+    
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 14px;
+      color: #333;
+      font-weight: 600;
+    }
+    
+    input {
+      width: 100%;
+      padding: 12px 15px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 14px;
+      transition: border-color $transition-fast;
+      
+      &:focus {
+        outline: none;
+        border-color: $color-primary;
+        box-shadow: 0 0 0 2px rgba($color-primary, 0.1);
+      }
+    }
+  }
+  
+  .formOptions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    
+    .rememberMe {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: #666;
+      cursor: pointer;
+    }
+    
+    .forgotPassword {
+      font-size: 13px;
+      color: $color-primary;
+      text-decoration: none;
+      
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+  }
+  
+  .submitBtn {
+    width: 100%;
+    background-color: $color-primary;
+    color: white;
+    border: none;
+    padding: 14px;
+    border-radius: 6px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color $transition-fast;
+    
+    &:hover:not(:disabled) {
+      background-color: $color-primary-dark;
+    }
+    
+    &:disabled {
+      background-color: #a0c9eb; // Lighter blue
+      cursor: not-allowed;
+    }
+  }
+  
+  .errorMsg {
+    color: #ef4444;
+    font-size: 13px;
+    margin-bottom: 15px;
+    text-align: center;
+    background-color: rgba(#ef4444, 0.1);
+    padding: 10px;
+    border-radius: 4px;
+  }
+}
+
+.authFooter {
+  text-align: center;
+  padding-top: 20px;
+  border-top: 1px solid #eee;
+  margin-top: 10px;
+  font-size: 14px;
+  color: #666;
+  
+  a {
+    color: $color-primary;
+    text-decoration: none;
+    font-weight: 600;
+    
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
+
+.mockAlert {
+  background-color: #fff3cd;
+  color: #856404;
+  padding: 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  margin-bottom: 20px;
+  border: 1px solid #ffeeba;
+  
+  strong {
+    display: block;
+    margin-bottom: 5px;
+  }
+}

@@ -1,0 +1,228 @@
+@use '../../../styles/variables' as *;
+
+.orderManage {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  h2 {
+    margin: 0;
+    color: #1f2937;
+    font-size: 24px;
+  }
+
+  .searchBar {
+    display: flex;
+    align-items: center;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    overflow: hidden;
+
+    input {
+      border: none;
+      padding: 10px 15px;
+      outline: none;
+      width: 250px;
+      font-size: 14px;
+    }
+
+    button {
+      background-color: #f3f4f6;
+      border: none;
+      border-left: 1px solid #d1d5db;
+      padding: 10px 15px;
+      cursor: pointer;
+      color: #6b7280;
+      font-size: 18px;
+
+      &:hover {
+        background-color: #e5e7eb;
+      }
+    }
+  }
+}
+
+.tableContainer {
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  border: 1px solid #f0f0f0;
+  overflow: hidden;
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+
+  th, td {
+    padding: 16px;
+    border-bottom: 1px solid #e5e7eb;
+    vertical-align: middle;
+  }
+
+  th {
+    background-color: #f9fafb;
+    color: #6b7280;
+    font-weight: 600;
+    font-size: 14px;
+  }
+
+  td {
+    color: #374151;
+    font-size: 14px;
+  }
+
+  tbody tr {
+    transition: background-color 0.2s;
+    &:hover {
+      background-color: #f9fafb;
+    }
+  }
+
+  .statusBadge {
+    padding: 6px 12px;
+    border-radius: 9999px;
+    font-size: 12px;
+    font-weight: 600;
+
+    &.statusSuccess {
+      background-color: #d1fae5;
+      color: #065f46;
+    }
+
+    &.statusCancel {
+      background-color: #fee2e2;
+      color: #991b1b;
+    }
+  }
+
+  .viewBtn {
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    color: #3b82f6;
+    transition: background-color 0.2s;
+
+    &:hover { background-color: #eff6ff; }
+  }
+}
+
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modal {
+  background-color: white;
+  width: 100%;
+  max-width: 500px;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid #e5e7eb;
+
+  h3 {
+    margin: 0;
+    font-size: 18px;
+    color: #111827;
+  }
+
+  .closeBtn {
+    background: none;
+    border: none;
+    font-size: 24px;
+    color: #6b7280;
+    cursor: pointer;
+    
+    &:hover {
+      color: #ef4444;
+    }
+  }
+}
+
+.modalBody {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.detailRow {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  
+  .label {
+    color: #6b7280;
+  }
+  
+  .value {
+    color: #111827;
+    text-align: right;
+  }
+
+  .totalValue {
+    color: $color-primary;
+    font-size: 18px;
+    font-weight: bold;
+  }
+}
+
+.divider {
+  height: 1px;
+  background-color: #e5e7eb;
+  margin: 10px 0;
+}
+
+.modalFooter {
+  padding: 16px 24px;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: flex-end;
+  background-color: #f9fafb;
+
+  .cancelBtn {
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 14px;
+    background-color: white;
+    border: 1px solid #d1d5db;
+    color: #374151;
+    transition: background-color 0.2s;
+
+    &:hover {
+      background-color: #f3f4f6;
+    }
+  }
+}

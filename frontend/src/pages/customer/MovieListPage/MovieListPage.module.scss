@@ -1,0 +1,370 @@
+@use '../../../styles/variables' as *;
+@use '../../../styles/mixins' as *;
+
+.movieListPage {
+  background-color: #fdfcf0;
+  min-height: 100vh;
+  padding-bottom: 60px;
+}
+
+.container {
+  max-width: $container-max;
+  margin: 0 auto;
+  padding: 0 $container-padding;
+}
+
+/* === BREADCRUMB === */
+.breadcrumbWrapper {
+  background-color: #f4f3e6;
+  border-bottom: 1px solid #e1e1e1;
+  padding: 10px 0;
+  
+  .breadcrumb {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: #666;
+    
+    li {
+      display: flex;
+      align-items: center;
+      
+      a {
+        color: #666;
+        text-decoration: none;
+        transition: color $transition-fast;
+        display: flex;
+        align-items: center;
+        
+        &:hover {
+          color: $color-primary;
+        }
+        
+        .homeIcon {
+          font-size: 18px;
+        }
+      }
+      
+      .separator {
+        font-size: 16px;
+        color: #999;
+      }
+      
+      &.active {
+        font-weight: bold;
+        color: #333;
+        text-transform: uppercase;
+        text-decoration: underline;
+      }
+    }
+  }
+}
+
+/* === PAGE CONTENT === */
+.pageContent {
+  padding: 40px 0;
+}
+
+.pageTitle {
+  font-size: 32px;
+  font-weight: 700;
+  color: #333;
+  margin: 0 0 40px 0;
+  padding-bottom: 15px;
+  border-bottom: 3px solid #333;
+  text-transform: uppercase;
+  text-align: center;
+}
+
+/* === MOVIE GRID === */
+.movieGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 30px;
+  
+  @include responsive(md) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  @include responsive(sm) {
+    grid-template-columns: repeat(1, 1fr);
+  }
+}
+
+.movieCard {
+  display: flex;
+  flex-direction: column;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  overflow: hidden;
+  transition: transform 0.3s;
+  
+  &:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+  }
+  
+  .posterContainer {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 2 / 3;
+    overflow: hidden;
+    
+    .ageRating {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background-color: #e50914;
+      color: white;
+      font-weight: bold;
+      font-size: 12px;
+      padding: 4px 8px;
+      border-radius: 4px;
+      z-index: 2;
+    }
+
+    .movieRating {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background-color: rgba(0, 0, 0, 0.7);
+      color: #f59e0b;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 14px;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      z-index: 2;
+
+      .starIcon {
+        font-size: 16px;
+      }
+
+      span {
+        color: white;
+      }
+    }
+    
+    .placeholderImage {
+      width: 100%;
+      height: 100%;
+      background-color: #d8e2eb;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      font-weight: bold;
+      color: #555;
+    }
+    
+    .hoverOverlay {
+      position: absolute;
+      inset: 0;
+      background-color: rgba(0,0,0,0.5);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      opacity: 0;
+      transition: opacity $transition-normal;
+      z-index: 3;
+      
+      .trailerBtn {
+        background-color: rgba($color-primary, 0.9);
+        border: 2px solid rgba(255,255,255,0.3);
+        color: white;
+        border-radius: 8px;
+        width: 60px;
+        height: 60px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: transform $transition-fast;
+        transform: scale(0.8);
+        
+        &:hover {
+          transform: scale(0.9);
+          background-color: $color-primary;
+        }
+        
+        .playIcon {
+          font-size: 32px;
+          margin-bottom: -4px;
+        }
+        
+        span {
+          font-size: 10px;
+          font-weight: bold;
+          text-transform: uppercase;
+        }
+      }
+      
+      .bottomActions {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background-color: rgba(0,0,0,0.85);
+        padding: 15px 10px;
+        transform: translateY(100%);
+        transition: transform $transition-normal;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        
+        .overlayTitle {
+          color: white;
+          font-size: 16px;
+          font-weight: 900;
+          text-transform: uppercase;
+          margin: 0 0 10px 0;
+          text-align: center;
+          @include text-truncate(1);
+        }
+        
+        .btnGroup {
+          display: flex;
+          width: 100%;
+          gap: 10px;
+          
+          a {
+            flex: 1;
+            text-align: center;
+            padding: 8px 0;
+            font-size: 12px;
+            font-weight: bold;
+            text-decoration: none;
+            color: white;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            transition: background-color $transition-fast;
+            border: 1px solid $color-primary;
+            
+            &.detailBtn {
+              background-color: $color-primary;
+              
+              &:hover {
+                background-color: $color-primary-dark;
+              }
+            }
+          }
+        }
+      }
+    }
+    
+    &:hover .hoverOverlay {
+      opacity: 1;
+      
+      .trailerBtn {
+        transform: scale(1);
+      }
+      
+      .bottomActions {
+        transform: translateY(0);
+      }
+    }
+  }
+  
+  .cardInfo {
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    
+    .movieTitle {
+      font-size: 18px;
+      font-weight: 700;
+      color: #333;
+      margin: 0 0 10px 0;
+      @include text-truncate(1);
+    }
+    
+    .movieMeta {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-bottom: 15px;
+      
+      span {
+        font-size: 13px;
+        color: #666;
+      }
+    }
+    
+    .bookTicketBtn {
+      margin-top: auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background-color: $color-primary;
+      color: white;
+      text-decoration: none;
+      font-weight: bold;
+      padding: 12px;
+      border-radius: 4px;
+      transition: background-color $transition-fast;
+      border: 2px solid transparent;
+      
+      .ticketIcon {
+        font-size: 20px;
+      }
+      
+      &:hover {
+        background-color: $color-primary-dark;
+      }
+    }
+  }
+}
+
+/* === TRAILER MODAL === */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0,0,0,0.85);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  .modalContent {
+    position: relative;
+    width: 90%;
+    max-width: 900px;
+    aspect-ratio: 16/9;
+    background-color: #000;
+    border-radius: 8px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    
+    .closeBtn {
+      position: absolute;
+      top: -40px;
+      right: 0;
+      background: none;
+      border: none;
+      color: white;
+      font-size: 32px;
+      cursor: pointer;
+      transition: color 0.2s;
+      
+      &:hover {
+        color: $color-primary;
+      }
+    }
+  }
+}
