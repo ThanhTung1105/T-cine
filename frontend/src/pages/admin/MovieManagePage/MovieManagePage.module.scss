@@ -232,27 +232,10 @@
 }
 
 /* KHOẢNG TẢI ẢNH (UPLOAD) */
-.uploadSection {
-  display: flex;
-  gap: 20px;
-  margin-top: 10px;
-
-  .uploadBox {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-
-    label {
-      font-size: 14px;
-      font-weight: 600;
-      color: #374151;
-    }
-  }
-}
-
 .uploadArea {
-  height: 200px;
+  height: 260px;
+  max-width: 220px;
+  aspect-ratio: 2 / 3;
   border: 2px dashed #d1d5db;
   border-radius: 8px;
   display: flex;
@@ -269,22 +252,33 @@
     background-color: #eff6ff;
   }
 
-  &.bannerArea {
-    height: 200px;
-  }
-
   .uploadPlaceholder {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 10px;
     color: #6b7280;
+    text-align: center;
+    padding: 12px;
 
     .uploadIcon {
       font-size: 40px;
       color: #9ca3af;
     }
   }
+}
+
+.uploadHint {
+  color: #d97706;
+  font-size: 12px;
+  background-color: #fef3c7;
+  padding: 8px 12px;
+  border-radius: 6px;
+  border-left: 3px solid #f59e0b;
+  margin-top: 6px;
+  line-height: 1.5;
+  display: block;
+  max-width: 320px;
 }
 
 .modalFooter {

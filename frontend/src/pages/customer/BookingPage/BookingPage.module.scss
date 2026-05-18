@@ -276,6 +276,9 @@
       padding: 10px;
       text-decoration: none;
       color: #333;
+      background: white;
+      cursor: pointer;
+      font: inherit;
       transition: all $transition-fast;
       
       .time {

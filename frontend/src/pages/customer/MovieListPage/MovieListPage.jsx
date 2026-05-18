@@ -1,7 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { MdHome, MdChevronRight, MdLocalPlay, MdPlayArrow, MdClose, MdStar } from 'react-icons/md';
+import movieApi from '../../../api/movieApi';
 import styles from './MovieListPage.module.scss';
+
+const STORAGE_URL = import.meta.env.VITE_STORAGE_URL || 'http://localhost:8000/storage';
 
 const MovieListPage = () => {
   const location = useLocation();
@@ -9,13 +12,26 @@ const MovieListPage = () => {
   const pageTitle = isShowing ? 'Phim Đang Chiếu' : 'Phim Sắp Chiếu';
 
   const [trailerUrl, setTrailerUrl] = useState(null);
-  const placeholderTrailer = "https://www.youtube.com/embed/dQw4w9WgXcQ";
+  const [movies, setMovies] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // Tạo mảng 8 phim placeholder để hiển thị grid
-  const movies = [
-    { id: 1, rating: 4.8 }, { id: 2, rating: 4.5 }, { id: 3, rating: 0 }, { id: 4, rating: 4.2 },
-    { id: 5, rating: 0 }, { id: 6, rating: 4.9 }, { id: 7, rating: 4.1 }, { id: 8, rating: 0 }
-  ];
+  useEffect(() => {
+    const fetchMovies = async () => {
+      setLoading(true);
+      try {
+        const res = isShowing
+          ? await movieApi.getNowShowing()
+          : await movieApi.getComingSoon();
+        setMovies(res.data || []);
+      } catch (error) {
+        console.error('Lỗi tải phim:', error);
+        setMovies([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchMovies();
+  }, [isShowing]);
 
   return (
     <div className={styles.movieListPage}>
@@ -34,53 +50,73 @@ const MovieListPage = () => {
         <div className={styles.pageContent}>
           <h1 className={styles.pageTitle}>{pageTitle}</h1>
 
-          <div className={styles.movieGrid}>
-            {movies.map((movie) => (
-              <div key={movie.id} className={styles.movieCard}>
-                <div className={styles.posterContainer}>
-                  <div className={styles.ageRating}>T18</div>
-                  {isShowing && (
-                    <div className={styles.movieRating}>
-                      <MdStar className={styles.starIcon} />
-                      <span>{movie.rating}</span>
-                    </div>
-                  )}
-                  <div className={styles.placeholderImage}>
-                    Poster Phim {movie.id} <br /> (250x350)
-                  </div>
-                  
-                  <div className={styles.hoverOverlay}>
-                    <button className={styles.trailerBtn} onClick={() => setTrailerUrl(placeholderTrailer)}>
-                      <MdPlayArrow className={styles.playIcon} />
-                      <span>TRAILER</span>
-                    </button>
+          {loading ? (
+            <p style={{ textAlign: 'center', color: '#aaa', padding: '60px 0' }}>Đang tải danh sách phim...</p>
+          ) : movies.length === 0 ? (
+            <p style={{ textAlign: 'center', color: '#aaa', padding: '60px 0' }}>
+              Chưa có phim nào. Vui lòng thêm phim từ trang Quản trị.
+            </p>
+          ) : (
+            <div className={styles.movieGrid}>
+              {movies.map((movie) => (
+                <div key={movie.id} className={styles.movieCard}>
+                  <div className={styles.posterContainer}>
+                    {movie.age_rating && (
+                      <div className={styles.ageRating}>{movie.age_rating}</div>
+                    )}
+                    {isShowing && movie.rating > 0 && (
+                      <div className={styles.movieRating}>
+                        <MdStar className={styles.starIcon} />
+                        <span>{movie.rating}</span>
+                      </div>
+                    )}
                     
-                    <div className={styles.bottomActions}>
-                      <h3 className={styles.overlayTitle}>TIÊU ĐỀ PHIM</h3>
-                      <div className={styles.btnGroup}>
-                        <Link to={`/phim/${movie.id}`} className={styles.detailBtn}>XEM CHI TIẾT</Link>
+                    {movie.poster ? (
+                      <img
+                        src={movie.poster.startsWith('http') ? movie.poster : `${STORAGE_URL}/${movie.poster}`}
+                        alt={movie.title}
+                        className={styles.posterImage}
+                      />
+                    ) : (
+                      <div className={styles.placeholderImage}>
+                        {movie.title} <br /> (250x350)
+                      </div>
+                    )}
+                    
+                    <div className={styles.hoverOverlay}>
+                      {movie.trailer_url && (
+                        <button className={styles.trailerBtn} onClick={() => setTrailerUrl(movie.trailer_url)}>
+                          <MdPlayArrow className={styles.playIcon} />
+                          <span>TRAILER</span>
+                        </button>
+                      )}
+                      
+                      <div className={styles.bottomActions}>
+                        <h3 className={styles.overlayTitle}>{movie.title}</h3>
+                        <div className={styles.btnGroup}>
+                          <Link to={`/phim/${movie.id}`} className={styles.detailBtn}>XEM CHI TIẾT</Link>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-                
-                <div className={styles.cardInfo}>
-                  <h3 className={styles.movieTitle}>TIÊU ĐỀ PHIM {movie.id}</h3>
-                  <div className={styles.movieMeta}>
-                    <span>Thể loại: Hành động, Viễn tưởng</span>
-                    <span>Thời lượng: 120 phút</span>
-                    <span>Khởi chiếu: 01/01/2026</span>
-                  </div>
                   
-                  {/* Nút Đặt Vé tĩnh hiển thị trực tiếp bên dưới theo yêu cầu */}
-                  <Link to={`/dat-ve/${movie.id}`} className={styles.bookTicketBtn}>
-                    <MdLocalPlay className={styles.ticketIcon} />
-                    ĐẶT VÉ
-                  </Link>
+                  <div className={styles.cardInfo}>
+                    <h3 className={styles.movieTitle}>{movie.title}</h3>
+                    <div className={styles.movieMeta}>
+                      <span>Thể loại: {movie.genre || 'N/A'}</span>
+                      <span>Thời lượng: {movie.duration || '?'} phút</span>
+                      <span>Khởi chiếu: {movie.release_date ? new Date(movie.release_date).toLocaleDateString('vi-VN') : 'N/A'}</span>
+                    </div>
+                    
+                    <Link to={`/dat-ve/${movie.id}`} className={styles.bookTicketBtn}>
+                      <MdLocalPlay className={styles.ticketIcon} />
+                      ĐẶT VÉ
+                    </Link>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 

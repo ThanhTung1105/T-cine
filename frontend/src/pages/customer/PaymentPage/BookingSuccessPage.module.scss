@@ -1,0 +1,213 @@
+@use '../../../styles/variables' as *;
+@use '../../../styles/mixins' as *;
+
+.successPage {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f0fdf4 0%, #fdfcf0 100%);
+  padding: 40px 0 80px;
+}
+
+.container {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 $container-padding;
+}
+
+.successBanner {
+  text-align: center;
+  margin-bottom: 30px;
+
+  .successIcon {
+    font-size: 80px;
+    color: #16a34a;
+    margin-bottom: 10px;
+    filter: drop-shadow(0 4px 10px rgba(22, 163, 74, 0.3));
+    animation: popIn 0.5s ease-out;
+  }
+
+  h1 {
+    font-size: 30px;
+    color: #16a34a;
+    margin: 0 0 8px 0;
+    font-weight: 700;
+  }
+
+  p {
+    color: #666;
+    font-size: 15px;
+    margin: 0;
+  }
+}
+
+@keyframes popIn {
+  0%   { transform: scale(0.5); opacity: 0; }
+  60%  { transform: scale(1.1); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.card {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.08);
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+}
+
+.cardHeader {
+  background: linear-gradient(135deg, $color-primary 0%, lighten($color-primary, 10%) 100%);
+  color: white;
+  padding: 22px 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+
+  svg { font-size: 36px; }
+
+  .label {
+    margin: 0;
+    font-size: 12px;
+    opacity: 0.85;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .code {
+    margin: 4px 0 0 0;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+  }
+}
+
+.cardBody { padding: 24px; }
+
+.row {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  margin-bottom: 16px;
+
+  .rowIcon {
+    font-size: 22px;
+    color: $color-primary;
+    margin-top: 2px;
+    flex-shrink: 0;
+  }
+
+  .rowLabel {
+    margin: 0;
+    font-size: 12px;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+  }
+
+  .rowValue {
+    margin: 4px 0 0 0;
+    font-size: 16px;
+    color: #1a1a1a;
+    font-weight: 600;
+  }
+}
+
+.divider {
+  height: 1px;
+  background: #eee;
+  margin: 18px 0;
+}
+
+.seatBlock .rowLabel {
+  margin: 0 0 10px 0;
+  font-size: 12px;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.seatList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.seatTag {
+  background: lighten($color-primary, 38%);
+  color: $color-primary;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.comboList {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 0 0;
+
+  li {
+    padding: 6px 0;
+    color: #444;
+    font-size: 14px;
+    border-bottom: 1px dashed #eee;
+    &:last-child { border-bottom: none; }
+  }
+}
+
+.amountRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  color: #444;
+  font-size: 14px;
+}
+
+.totalRow {
+  margin-top: 6px;
+  padding-top: 14px;
+  border-top: 1px dashed #ddd;
+  font-size: 18px;
+  font-weight: 700;
+  color: $color-primary;
+}
+
+.txInfo {
+  margin: 14px 0 0 0;
+  padding: 10px 12px;
+  background: #f9fafb;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #555;
+}
+
+.actions {
+  display: flex;
+  gap: 12px;
+  padding: 0 24px 24px;
+
+  @include responsive(sm) {
+    flex-direction: column;
+  }
+}
+
+.primaryBtn, .secondaryBtn {
+  flex: 1;
+  text-align: center;
+  padding: 14px;
+  border-radius: 10px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  font-size: 15px;
+}
+
+.primaryBtn {
+  background: $color-primary;
+  color: white;
+  &:hover { filter: brightness(1.1); transform: translateY(-1px); }
+}
+
+.secondaryBtn {
+  background: #f3f4f6;
+  color: #333;
+  &:hover { background: #e5e7eb; }
+}

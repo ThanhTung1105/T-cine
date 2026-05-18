@@ -13,6 +13,9 @@ const bookingApi = {
   // Hủy đơn đặt vé
   cancel: (id) => axiosClient.put(`/bookings/${id}/cancel`),
 
+  // Xác nhận thanh toán (mô phỏng)
+  confirmPayment: (id, data) => axiosClient.post(`/bookings/${id}/confirm-payment`, data),
+
   // === Admin ===
   getAll: (params) => axiosClient.get('/admin/bookings', { params }),
   updateStatus: (id, data) => axiosClient.put(`/admin/bookings/${id}/status`, data),

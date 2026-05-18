@@ -1,16 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import useAuthStore from '../../store/useAuthStore';
+import Toast from '../../components/Toast/Toast';
 import styles from './Auth.module.scss';
 
 const RegisterPage = () => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
+    phone: '',
     password: '',
-    confirmPassword: ''
+    password_confirmation: ''
   });
   const [validationError, setValidationError] = useState('');
+  const [toast, setToast] = useState(null);
   
   const navigate = useNavigate();
   const { register, isLoading, error, clearError } = useAuthStore();
@@ -22,19 +25,23 @@ const RegisterPage = () => {
   const handleChange = (e) => {
     const { id, value } = e.target;
     setFormData(prev => ({ ...prev, [id]: value }));
-    setValidationError(''); // Clear validation error on typing
+    setValidationError('');
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Basic validation
     if (!formData.name || !formData.email || !formData.password) {
       setValidationError('Vui lòng điền đầy đủ thông tin');
       return;
     }
     
-    if (formData.password !== formData.confirmPassword) {
+    if (formData.password.length < 6) {
+      setValidationError('Mật khẩu phải có ít nhất 6 ký tự');
+      return;
+    }
+
+    if (formData.password !== formData.password_confirmation) {
       setValidationError('Mật khẩu xác nhận không khớp');
       return;
     }
@@ -43,13 +50,14 @@ const RegisterPage = () => {
       await register({
         name: formData.name,
         email: formData.email,
-        password: formData.password
+        phone: formData.phone,
+        password: formData.password,
+        password_confirmation: formData.password_confirmation
       });
-      // Nếu đăng ký thành công (mock)
-      alert("Đăng ký thành công! Vui lòng đăng nhập.");
-      navigate('/dang-nhap');
+      setToast({ message: 'Đăng ký thành công! Chuyển hướng đến trang đăng nhập...', type: 'success' });
+      setTimeout(() => navigate('/dang-nhap'), 2000);
     } catch (err) {
-      console.error("Register failed", err);
+      // Lỗi đã được xử lý trong useAuthStore
     }
   };
 
@@ -93,23 +101,34 @@ const RegisterPage = () => {
             </div>
 
             <div className={styles.formGroup}>
+              <label htmlFor="phone">Số điện thoại</label>
+              <input
+                type="tel"
+                id="phone"
+                value={formData.phone}
+                onChange={handleChange}
+                placeholder="Nhập số điện thoại (không bắt buộc)"
+              />
+            </div>
+
+            <div className={styles.formGroup}>
               <label htmlFor="password">Mật khẩu</label>
               <input
                 type="password"
                 id="password"
                 value={formData.password}
                 onChange={handleChange}
-                placeholder="Nhập mật khẩu"
+                placeholder="Nhập mật khẩu (ít nhất 6 ký tự)"
                 required
               />
             </div>
 
             <div className={styles.formGroup}>
-              <label htmlFor="confirmPassword">Xác nhận mật khẩu</label>
+              <label htmlFor="password_confirmation">Xác nhận mật khẩu</label>
               <input
                 type="password"
-                id="confirmPassword"
-                value={formData.confirmPassword}
+                id="password_confirmation"
+                value={formData.password_confirmation}
                 onChange={handleChange}
                 placeholder="Nhập lại mật khẩu"
                 required
@@ -130,6 +149,8 @@ const RegisterPage = () => {
           </form>
         </div>
       </div>
+
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
     </div>
   );
 };

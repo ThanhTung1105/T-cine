@@ -120,6 +120,80 @@
   flex-direction: column;
 }
 
+/* === PROMO SECTION === */
+.promoSection {
+  margin-top: 30px;
+  padding-top: 25px;
+  border-top: 1px solid #eee;
+
+  h3 {
+    font-size: 16px;
+    font-weight: bold;
+    color: #333;
+    margin: 0 0 12px 0;
+  }
+
+  .promoInputRow {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+
+    input {
+      flex: 1;
+      padding: 10px 14px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 14px;
+      text-transform: uppercase;
+
+      &:focus {
+        outline: none;
+        border-color: $color-primary;
+      }
+
+      &:disabled {
+        background: #f3f3f3;
+      }
+    }
+
+    button {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px;
+      background: $color-primary;
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+
+      &:hover { opacity: 0.9; }
+      &:disabled { background: #ccc; cursor: not-allowed; }
+    }
+
+    .removePromoBtn {
+      background: #ef4444;
+    }
+  }
+
+  .promoMsg {
+    margin-top: 8px;
+    font-size: 13px;
+
+    &.error  { color: #ef4444; }
+    &.success { color: #16a34a; }
+  }
+}
+
+.discountRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 8px 0;
+  font-size: 13px;
+  color: #16a34a;
+  font-weight: 600;
+}
+
 .methodItem {
   display: flex;
   align-items: center;
@@ -340,6 +414,11 @@
     
     &:hover {
       background-color: darken(#84d62b, 10%);
+    }
+
+    &:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
     }
   }
   

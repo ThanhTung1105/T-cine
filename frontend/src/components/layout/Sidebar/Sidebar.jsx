@@ -7,8 +7,11 @@ import {
   MdEventSeat,
   MdCalendarToday,
   MdReceipt, 
-  MdPeople, 
-  MdAttachMoney,
+  MdPeople,
+  MdImage,
+  MdCampaign,
+  MdFastfood,
+  MdLocalOffer,
   MdMenu,
   MdChevronLeft
 } from 'react-icons/md';
@@ -23,7 +26,10 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
     { path: '/admin/lich-chieu', name: 'Lịch chiếu', icon: <MdCalendarToday /> },
     { path: '/admin/don-hang', name: 'Đơn hàng', icon: <MdReceipt /> },
     { path: '/admin/nguoi-dung', name: 'Người dùng', icon: <MdPeople /> },
-    { path: '/admin/doanh-thu', name: 'Doanh thu', icon: <MdAttachMoney /> },
+    { path: '/admin/banner', name: 'Banner trang chủ', icon: <MdImage /> },
+    { path: '/admin/su-kien', name: 'Sự kiện / Ưu đãi', icon: <MdCampaign /> },
+    { path: '/admin/ma-giam-gia', name: 'Mã giảm giá', icon: <MdLocalOffer /> },
+    { path: '/admin/combo', name: 'Combo bắp nước', icon: <MdFastfood /> },
   ];
 
   return (

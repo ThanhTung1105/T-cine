@@ -1,123 +1,159 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { MdLocationOn, MdCalendarToday, MdPlayCircleOutline } from 'react-icons/md';
+import React, { useState, useEffect } from 'react';
+import { Link, useParams, useNavigate } from 'react-router-dom';
+import { MdLocationOn, MdCalendarToday } from 'react-icons/md';
+import movieApi from '../../../api/movieApi';
+import axiosClient from '../../../api/axiosClient';
+import useBookingStore from '../../../store/useBookingStore';
+import useAuthStore from '../../../store/useAuthStore';
 import styles from './BookingPage.module.scss';
 
-const BookingPage = () => {
-  // Mock data for showtimes
-  const dates = [
-    { day: '05', date: 'Thứ 2', active: true },
-    { day: '06', date: 'Thứ 3', active: false },
-    { day: '07', date: 'Thứ 4', active: false },
-    { day: '08', date: 'Thứ 5', active: false },
-    { day: '09', date: 'Thứ 6', active: false },
-    { day: '10', date: 'Thứ 7', active: false },
-    { day: '11', date: 'CN', active: false },
-  ];
+const STORAGE_URL = import.meta.env.VITE_STORAGE_URL || 'http://localhost:8000/storage';
 
-  const cinemas = [
-    {
-      id: 1,
-      name: 'T-CINE Vincom Center',
-      address: 'Tầng 5, Vincom Center, Quận 1, TP.HCM',
-      showtimes: ['09:30', '11:15', '13:00', '15:45', '18:30', '20:15']
-    },
-    {
-      id: 2,
-      name: 'T-CINE Landmark 81',
-      address: 'B1, Vincom Landmark 81, Quận Bình Thạnh, TP.HCM',
-      showtimes: ['10:00', '12:30', '14:15', '17:00', '19:30', '21:00', '22:15']
-    },
-    {
-      id: 3,
-      name: 'T-CINE Giga Mall',
-      address: 'Tầng 6, Giga Mall, Thủ Đức, TP.HCM',
-      showtimes: ['09:00', '11:30', '16:00', '18:45', '20:30']
+const BookingPage = () => {
+  const { id: movieId } = useParams();
+  const navigate = useNavigate();
+  const { isAuthenticated } = useAuthStore();
+  const resetBooking = useBookingStore((s) => s.resetBooking);
+
+  const [movie, setMovie] = useState(null);
+  const [showtimeData, setShowtimeData] = useState([]);
+  const [selectedDate, setSelectedDate] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [dates, setDates] = useState([]);
+
+  const handleSelectShowtime = (showtimeId) => {
+    if (!isAuthenticated) {
+      alert('Vui lòng đăng nhập để đặt vé.');
+      navigate('/dang-nhap');
+      return;
     }
-  ];
+    // Bắt đầu luồng đặt vé mới — reset state cũ
+    resetBooking();
+    navigate(`/chon-ghe/${showtimeId}`);
+  };
+
+  // Tạo danh sách 7 ngày kế tiếp
+  useEffect(() => {
+    const today = new Date();
+    const dateList = [];
+    const days = ['CN', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(today);
+      d.setDate(today.getDate() + i);
+      dateList.push({
+        full: d.toISOString().split('T')[0],
+        day: String(d.getDate()).padStart(2, '0'),
+        dayName: days[d.getDay()],
+      });
+    }
+    setDates(dateList);
+    setSelectedDate(dateList[0].full);
+  }, []);
+
+  // Load thông tin phim
+  useEffect(() => {
+    if (!movieId) return;
+    const fetchMovie = async () => {
+      try {
+        const res = await movieApi.getById(movieId);
+        setMovie(res.data);
+      } catch (e) { console.error(e); }
+    };
+    fetchMovie();
+  }, [movieId]);
+
+  // Load lịch chiếu theo phim + ngày
+  useEffect(() => {
+    if (!movieId || !selectedDate) return;
+    const fetchShowtimes = async () => {
+      setLoading(true);
+      try {
+        const res = await axiosClient.get(`/movies/${movieId}/showtimes`, { params: { date: selectedDate } });
+        setShowtimeData(res.data || []);
+      } catch (e) { setShowtimeData([]); }
+      finally { setLoading(false); }
+    };
+    fetchShowtimes();
+  }, [movieId, selectedDate]);
+
+  const posterSrc = movie?.poster ? (movie.poster.startsWith('http') ? movie.poster : `${STORAGE_URL}/${movie.poster}`) : null;
 
   return (
     <div className={styles.bookingPage}>
-      {/* 1. Stepper Navigation */}
+      {/* Stepper */}
       <div className={styles.stepperContainer}>
         <div className={styles.stepperWrapper}>
-          <div className={`${styles.step} ${styles.active}`}>
-            <div className={styles.stepCircle}>01</div>
-            <span className={styles.stepLabel}>Chọn thời gian và địa điểm</span>
-          </div>
+          <div className={`${styles.step} ${styles.active}`}><div className={styles.stepCircle}>01</div><span className={styles.stepLabel}>Chọn thời gian và địa điểm</span></div>
           <div className={styles.stepLine}></div>
-          <div className={styles.step}>
-            <div className={styles.stepCircle}>02</div>
-            <span className={styles.stepLabel}>Chọn ghế</span>
-          </div>
+          <div className={styles.step}><div className={styles.stepCircle}>02</div><span className={styles.stepLabel}>Chọn ghế</span></div>
           <div className={styles.stepLine}></div>
-          <div className={styles.step}>
-            <div className={styles.stepCircle}>03</div>
-            <span className={styles.stepLabel}>Thanh toán</span>
-          </div>
+          <div className={styles.step}><div className={styles.stepCircle}>03</div><span className={styles.stepLabel}>Thanh toán</span></div>
           <div className={styles.stepLine}></div>
-          <div className={styles.step}>
-            <div className={styles.stepCircle}>04</div>
-            <span className={styles.stepLabel}>Hoàn tất</span>
-          </div>
+          <div className={styles.step}><div className={styles.stepCircle}>04</div><span className={styles.stepLabel}>Hoàn tất</span></div>
         </div>
       </div>
 
       <div className={styles.container}>
         <h1 className={styles.pageMainTitle}>Bước 1: Chọn thời gian và địa điểm</h1>
 
-        {/* 2. Movie Info Section */}
+        {/* Movie Info */}
         <div className={styles.movieInfoCard}>
-          <div className={styles.posterPlaceholder}>
-            Ảnh Phim<br/>(Dọc)
-          </div>
+          {posterSrc ? (
+            <img src={posterSrc} alt={movie?.title} className={styles.posterPlaceholder} style={{ objectFit: 'cover' }} />
+          ) : (
+            <div className={styles.posterPlaceholder}>Ảnh Phim<br />(Dọc)</div>
+          )}
           <div className={styles.movieDetails}>
-            <h2 className={styles.movieTitle}>TIÊU ĐỀ PHIM (PLACEHOLDER)</h2>
-            <p className={styles.movieDesc}>
-              Đây là nội dung mô tả ngắn của phim. Sẽ được điền dữ liệu động từ database.
-            </p>
+            <h2 className={styles.movieTitle}>{movie?.title || 'Đang tải...'}</h2>
+            <p className={styles.movieDesc}>{movie?.description || ''}</p>
             <ul className={styles.metaList}>
-              <li><strong>Đạo diễn:</strong> Tên đạo diễn</li>
-              <li><strong>Diễn viên:</strong> Tên diễn viên A, Tên diễn viên B</li>
-              <li><strong>Thể loại:</strong> Hành động, Viễn tưởng</li>
-              <li><strong>Thời lượng:</strong> 120 phút</li>
+              <li><strong>Đạo diễn:</strong> {movie?.director || 'N/A'}</li>
+              <li><strong>Diễn viên:</strong> {movie?.cast_info || 'N/A'}</li>
+              <li><strong>Thể loại:</strong> {movie?.genre || 'N/A'}</li>
+              <li><strong>Thời lượng:</strong> {movie?.duration ? `${movie.duration} phút` : 'N/A'}</li>
             </ul>
-            <button className={styles.trailerBtn}>
-              <MdPlayCircleOutline className={styles.icon} /> XEM TRAILER
-            </button>
           </div>
         </div>
 
         <div className={styles.bookingContent}>
-          {/* Left Column: Cinemas & Showtimes */}
+          {/* Cinema & Showtime List */}
           <div className={styles.mainColumn}>
             <div className={styles.cinemaList}>
-              {cinemas.map(cinema => (
-                <div key={cinema.id} className={styles.cinemaItem}>
-                  <div className={styles.cinemaHeader}>
-                    <MdLocationOn className={styles.locationIcon} />
-                    <div>
-                      <h3 className={styles.cinemaName}>{cinema.name}</h3>
-                      <p className={styles.cinemaAddress}>{cinema.address}</p>
+              {loading ? (
+                <p style={{ textAlign: 'center', color: '#aaa', padding: '40px' }}>Đang tải lịch chiếu...</p>
+              ) : showtimeData.length === 0 ? (
+                <p style={{ textAlign: 'center', color: '#aaa', padding: '40px' }}>Không có suất chiếu cho ngày này.</p>
+              ) : (
+                showtimeData.map((item) => (
+                  <div key={item.cinema?.id} className={styles.cinemaItem}>
+                    <div className={styles.cinemaHeader}>
+                      <MdLocationOn className={styles.locationIcon} />
+                      <div>
+                        <h3 className={styles.cinemaName}>{item.cinema?.name}</h3>
+                        <p className={styles.cinemaAddress}>{item.cinema?.address}</p>
+                      </div>
+                    </div>
+                    <div className={styles.formatLabel}>2D Phụ Đề Việt</div>
+                    <div className={styles.showtimeGrid}>
+                      {(item.showtimes || []).map((st) => (
+                        <button
+                          type="button"
+                          key={st.id}
+                          className={styles.timeBtn}
+                          onClick={() => handleSelectShowtime(st.id)}
+                        >
+                          <span className={styles.time}>{new Date(st.start_time).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</span>
+                          <span className={styles.seats}>{st.room?.name}</span>
+                        </button>
+                      ))}
                     </div>
                   </div>
-                  
-                  <div className={styles.formatLabel}>2D Phụ Đề Việt</div>
-                  
-                  <div className={styles.showtimeGrid}>
-                    {cinema.showtimes.map((time, index) => (
-                      <Link to={`/chon-ghe/${cinema.id}/${index}`} key={index} className={styles.timeBtn}>
-                        <span className={styles.time}>{time}</span>
-                        <span className={styles.seats}>150 ghế trống</span>
-                      </Link>
-                    ))}
-                  </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
 
-          {/* Right Column: Calendar Date Picker */}
+          {/* Date Selector */}
           <div className={styles.sideColumn}>
             <div className={styles.calendarWidget}>
               <div className={styles.calendarHeader}>
@@ -125,44 +161,18 @@ const BookingPage = () => {
                 <h3>Chọn ngày xem</h3>
               </div>
               <div className={styles.dateSelector}>
-                {/* Dải ngày tĩnh */}
                 <div className={styles.dateList}>
-                  {dates.map((d, i) => (
-                    <button key={i} className={`${styles.dateBtn} ${d.active ? styles.active : ''}`}>
+                  {dates.map((d) => (
+                    <button key={d.full} className={`${styles.dateBtn} ${selectedDate === d.full ? styles.active : ''}`} onClick={() => setSelectedDate(d.full)}>
                       <span className={styles.dayNum}>{d.day}</span>
-                      <span className={styles.dayStr}>{d.date}</span>
+                      <span className={styles.dayStr}>{d.dayName}</span>
                     </button>
                   ))}
                 </div>
               </div>
-              {/* Lịch tháng mô phỏng */}
-              <div className={styles.monthCalendarPlaceholder}>
-                [Giao diện Lịch Tháng Placeholder]
-                <br /><br />
-                (Click ngày trên thanh trượt để chọn)
-              </div>
             </div>
           </div>
         </div>
-
-        {/* 3. Special Offers (Ưu Đãi Đặc Biệt) */}
-        <div className={styles.specialOffersSection}>
-          <div className={styles.offerHeader}>
-            <span className={styles.offerTitleBadge}>ƯU ĐÃI ĐẶC BIỆT</span>
-          </div>
-          <div className={styles.offerGrid}>
-            {[1, 2, 3, 4].map(item => (
-              <div key={item} className={styles.offerCard}>
-                <div className={styles.offerImgPlaceholder}>
-                  Promo Banner {item} <br/> (Vuông)
-                </div>
-                <h4 className={styles.offerTitle}>TIÊU ĐỀ ƯU ĐÃI SỐ {item}</h4>
-                <p className={styles.offerDesc}>Nội dung mô tả ngắn gọn về chương trình ưu đãi dành cho khách hàng...</p>
-              </div>
-            ))}
-          </div>
-        </div>
-
       </div>
     </div>
   );

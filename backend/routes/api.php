@@ -13,6 +13,8 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\ComboController;
 use App\Http\Controllers\PromotionController;
 use App\Http\Controllers\BannerController;
+use App\Http\Controllers\EventController;
+use App\Http\Controllers\PaymentController;
 
 // Controllers Admin
 use App\Http\Controllers\Admin\MovieController as AdminMovieController;
@@ -23,7 +25,9 @@ use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Admin\ComboController as AdminComboController;
 use App\Http\Controllers\Admin\PromotionController as AdminPromotionController;
 use App\Http\Controllers\Admin\BannerController as AdminBannerController;
+use App\Http\Controllers\Admin\EventController as AdminEventController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\UploadController;
 
 /*
 |--------------------------------------------------------------------------
@@ -61,6 +65,10 @@ Route::get('/banners', [BannerController::class, 'index']);
 // --- Khuyến mãi ---
 Route::get('/promotions/check', [PromotionController::class, 'check']);
 
+// --- Sự kiện / Ưu đãi ---
+Route::get('/events', [EventController::class, 'index']);
+Route::get('/events/{id}', [EventController::class, 'show']);
+
 /*
 |--------------------------------------------------------------------------
 | ===== ROUTES YÊU CẦU ĐĂNG NHẬP (auth:sanctum) =====
@@ -84,6 +92,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/bookings/{id}', [BookingController::class, 'show']);
     Route::put('/bookings/{id}/cancel', [BookingController::class, 'cancel']);
 
+    // --- Thanh toán (mô phỏng) ---
+    Route::post('/bookings/{id}/confirm-payment', [PaymentController::class, 'confirm']);
+
     /*
     |--------------------------------------------------------------------------
     | ===== ROUTES ADMIN (Cần đăng nhập + role = admin) =====
@@ -97,6 +108,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/revenue/by-movie', [DashboardController::class, 'revenueByMovie']);
         Route::get('/revenue/by-cinema', [DashboardController::class, 'revenueByCinema']);
         Route::get('/stats/tickets', [DashboardController::class, 'ticketStats']);
+
+        // Upload ảnh
+        Route::post('/upload', [UploadController::class, 'store']);
 
         // Quản lý Phim
         Route::post('/movies', [AdminMovieController::class, 'store']);
@@ -143,5 +157,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/banners', [AdminBannerController::class, 'store']);
         Route::put('/banners/{id}', [AdminBannerController::class, 'update']);
         Route::delete('/banners/{id}', [AdminBannerController::class, 'destroy']);
+
+        // Quản lý Sự kiện / Ưu đãi
+        Route::get('/events', [AdminEventController::class, 'index']);
+        Route::post('/events', [AdminEventController::class, 'store']);
+        Route::put('/events/{id}', [AdminEventController::class, 'update']);
+        Route::delete('/events/{id}', [AdminEventController::class, 'destroy']);
     });
 });

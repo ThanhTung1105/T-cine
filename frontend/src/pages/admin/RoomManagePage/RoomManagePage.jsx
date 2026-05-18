@@ -1,235 +1,197 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MdAdd, MdEdit, MdDelete, MdClose, MdEventSeat } from 'react-icons/md';
+import cinemaApi from '../../../api/cinemaApi';
+import axiosClient from '../../../api/axiosClient';
 import styles from './RoomManagePage.module.scss';
 
 const RoomManagePage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSeatModalOpen, setIsSeatModalOpen] = useState(false);
-  const [selectedCinema, setSelectedCinema] = useState('1'); // Mặc định chọn rạp 1
+  const [selectedCinema, setSelectedCinema] = useState('');
   const [selectedRoomForSeat, setSelectedRoomForSeat] = useState(null);
+  const [cinemas, setCinemas] = useState([]);
+  const [rooms, setRooms] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [editingRoom, setEditingRoom] = useState(null);
+  const [formData, setFormData] = useState({ name: '', capacity: '' });
 
-  // Mock Data Rạp
-  const cinemas = [
-    { id: '1', name: 'T-CINE Landmark 81' },
-    { id: '2', name: 'T-CINE Giga Mall' },
-    { id: '3', name: 'T-CINE Aeon Tân Phú' },
-  ];
-
-  // Mock Data Phòng Chiếu (giả lập chỉ hiện phòng của rạp được chọn)
-  const allRooms = [
-    { id: 1, cinemaId: '1', name: 'Phòng 1', type: 'Standard', rowCount: 10, colCount: 12, totalSeats: 120, status: 'Hoạt động' },
-    { id: 2, cinemaId: '1', name: 'Phòng 2', type: 'VIP', rowCount: 8, colCount: 10, totalSeats: 80, status: 'Hoạt động' },
-    { id: 3, cinemaId: '1', name: 'Phòng 3', type: 'IMAX', rowCount: 12, colCount: 15, totalSeats: 180, status: 'Bảo trì' },
-    { id: 4, cinemaId: '2', name: 'Phòng 1', type: 'Standard', rowCount: 10, colCount: 12, totalSeats: 120, status: 'Hoạt động' },
-  ];
-
-  const filteredRooms = allRooms.filter(room => room.cinemaId === selectedCinema);
-
-  const handleOpenModal = () => setIsModalOpen(true);
-  const handleCloseModal = () => setIsModalOpen(false);
-
-  const handleOpenSeatModal = (room) => {
-    setSelectedRoomForSeat(room);
-    setIsSeatModalOpen(true);
+  const fetchCinemas = async () => {
+    try {
+      const res = await cinemaApi.getAll();
+      const list = res.data || [];
+      setCinemas(list);
+      if (list.length > 0 && !selectedCinema) {
+        setSelectedCinema(String(list[0].id));
+      }
+    } catch (e) { console.error(e); }
   };
-  const handleCloseSeatModal = () => {
-    setIsSeatModalOpen(false);
-    setSelectedRoomForSeat(null);
+
+  const fetchRooms = async (cinemaId) => {
+    if (!cinemaId) return;
+    setLoading(true);
+    try {
+      const res = await cinemaApi.getRooms(cinemaId);
+      setRooms(res.data || []);
+    } catch (e) { setRooms([]); }
+    finally { setLoading(false); }
   };
+
+  useEffect(() => { fetchCinemas(); }, []);
+  useEffect(() => { if (selectedCinema) fetchRooms(selectedCinema); }, [selectedCinema]);
+
+  const handleChange = (e) => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+
+  const handleOpenModal = () => {
+    setEditingRoom(null);
+    setFormData({ name: '', capacity: '' });
+    setIsModalOpen(true);
+  };
+
+  const handleEdit = (room) => {
+    setEditingRoom(room);
+    setFormData({ name: room.name, capacity: room.capacity || '' });
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => { setIsModalOpen(false); setEditingRoom(null); };
+
+  const handleDelete = async (roomId) => {
+    if (!window.confirm('Bạn có chắc muốn xóa phòng chiếu này?')) return;
+    try {
+      await axiosClient.delete(`/admin/cinemas/${selectedCinema}/rooms/${roomId}`);
+      fetchRooms(selectedCinema);
+    } catch (e) { alert('Xóa phòng thất bại!'); }
+  };
+
+  const handleSave = async () => {
+    if (!formData.name || !formData.capacity) { alert('Vui lòng nhập tên và sức chứa!'); return; }
+    setSaving(true);
+    try {
+      const payload = { name: formData.name, capacity: parseInt(formData.capacity) };
+      if (editingRoom) {
+        await axiosClient.put(`/admin/cinemas/${selectedCinema}/rooms/${editingRoom.id}`, payload);
+      } else {
+        await axiosClient.post(`/admin/cinemas/${selectedCinema}/rooms`, payload);
+      }
+      handleCloseModal(); fetchRooms(selectedCinema);
+    } catch (e) { alert('Lưu phòng thất bại!'); }
+    finally { setSaving(false); }
+  };
+
+  const handleOpenSeatModal = (room) => { setSelectedRoomForSeat(room); setIsSeatModalOpen(true); };
+  const handleCloseSeatModal = () => { setIsSeatModalOpen(false); setSelectedRoomForSeat(null); };
+
+  const cinemaName = cinemas.find(c => String(c.id) === selectedCinema)?.name || '';
 
   return (
     <div className={styles.roomManage}>
       <div className={styles.header}>
         <h2>Quản lý Phòng Chiếu</h2>
-        <button className={styles.addBtn} onClick={handleOpenModal}>
-          <MdAdd /> Thêm Phòng Mới
-        </button>
+        <button className={styles.addBtn} onClick={handleOpenModal}><MdAdd /> Thêm Phòng Mới</button>
       </div>
 
-      {/* Bộ lọc Rạp Cha */}
       <div className={styles.filterSection}>
         <label>Chọn Rạp để xem phòng chiếu:</label>
-        <select 
-          value={selectedCinema} 
-          onChange={(e) => setSelectedCinema(e.target.value)}
-          className={styles.cinemaSelect}
-        >
-          {cinemas.map(c => (
-            <option key={c.id} value={c.id}>{c.name}</option>
-          ))}
+        <select value={selectedCinema} onChange={(e) => setSelectedCinema(e.target.value)} className={styles.cinemaSelect}>
+          {cinemas.map(c => <option key={c.id} value={String(c.id)}>{c.name}</option>)}
         </select>
       </div>
 
       <div className={styles.tableContainer}>
-        <table className={styles.table}>
-          <thead>
-            <tr>
-              <th>Tên Phòng</th>
-              <th>Loại Phòng</th>
-              <th>Sơ đồ ghế (Hàng x Cột)</th>
-              <th>Tổng ghế</th>
-              <th>Trạng thái</th>
-              <th>Thao tác</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredRooms.length > 0 ? (
-              filteredRooms.map(room => (
+        {loading ? <p style={{ textAlign: 'center', padding: '40px', color: '#aaa' }}>Đang tải...</p> : (
+          <table className={styles.table}>
+            <thead><tr><th>Tên Phòng</th><th>Sức chứa</th><th>Số ghế</th><th>Thao tác</th></tr></thead>
+            <tbody>
+              {rooms.length > 0 ? rooms.map(room => (
                 <tr key={room.id}>
                   <td><strong>{room.name}</strong></td>
-                  <td><span className={styles.typeBadge}>{room.type}</span></td>
-                  <td>{room.rowCount} x {room.colCount}</td>
-                  <td>{room.totalSeats} ghế</td>
-                  <td>
-                    <span className={`${styles.statusBadge} ${room.status === 'Hoạt động' ? styles.statusActive : styles.statusMaintenance}`}>
-                      {room.status}
-                    </span>
-                  </td>
+                  <td>{room.capacity || '-'} ghế</td>
+                  <td>{room.seats_count ?? '-'}</td>
                   <td>
                     <div className={styles.actionBtns}>
-                      <button className={styles.seatBtn} title="Quản lý Sơ đồ ghế" onClick={() => handleOpenSeatModal(room)}>
-                        <MdEventSeat />
-                      </button>
-                      <button className={styles.editBtn} title="Sửa"><MdEdit /></button>
-                      <button className={styles.deleteBtn} title="Xóa"><MdDelete /></button>
+                      <button className={styles.seatBtn} title="Xem ghế" onClick={() => handleOpenSeatModal(room)}><MdEventSeat /></button>
+                      <button className={styles.editBtn} title="Sửa" onClick={() => handleEdit(room)}><MdEdit /></button>
+                      <button className={styles.deleteBtn} title="Xóa" onClick={() => handleDelete(room.id)}><MdDelete /></button>
                     </div>
                   </td>
                 </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan="6" className={styles.emptyState}>Rạp này hiện chưa có phòng chiếu nào.</td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+              )) : (
+                <tr><td colSpan="4" className={styles.emptyState}>Rạp này hiện chưa có phòng chiếu nào.</td></tr>
+              )}
+            </tbody>
+          </table>
+        )}
       </div>
 
-      {/* Modal Thêm/Sửa Phòng */}
       {isModalOpen && (
         <div className={styles.modalOverlay}>
           <div className={styles.modal}>
             <div className={styles.modalHeader}>
-              <h3>Thêm Phòng Chiếu</h3>
+              <h3>{editingRoom ? 'Sửa Phòng Chiếu' : 'Thêm Phòng Chiếu'}</h3>
               <button className={styles.closeBtn} onClick={handleCloseModal}><MdClose /></button>
             </div>
-            
             <div className={styles.modalBody}>
-              <form className={styles.form}>
+              <form className={styles.form} onSubmit={e => e.preventDefault()}>
                 <div className={styles.formGroup}>
                   <label>Trực thuộc Rạp</label>
-                  <select defaultValue={selectedCinema} disabled>
-                    {cinemas.map(c => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
-                    ))}
-                  </select>
-                  <small className={styles.helperText}>Phòng chiếu sẽ được thêm vào rạp bạn đang chọn ở ngoài.</small>
+                  <input type="text" value={cinemaName} disabled />
                 </div>
-
                 <div className={styles.formRow}>
-                  <div className={styles.formGroup}>
-                    <label>Tên Phòng</label>
-                    <input type="text" placeholder="VD: Phòng 1, Cinema 02..." />
-                  </div>
-                  <div className={styles.formGroup}>
-                    <label>Loại Phòng</label>
-                    <select>
-                      <option>Standard (Tiêu chuẩn)</option>
-                      <option>VIP</option>
-                      <option>IMAX</option>
-                      <option>3D</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className={styles.seatConfigSection}>
-                  <h4>Cấu hình sơ đồ ghế cơ bản</h4>
-                  <p>Hệ thống sẽ tự động tạo ma trận ghế dựa trên Hàng và Cột.</p>
-                  <div className={styles.formRow}>
-                    <div className={styles.formGroup}>
-                      <label>Số lượng Hàng (Ngang)</label>
-                      <input type="number" placeholder="VD: 10" />
-                    </div>
-                    <div className={styles.formGroup}>
-                      <label>Số lượng Cột (Dọc)</label>
-                      <input type="number" placeholder="VD: 12" />
-                    </div>
-                  </div>
-                </div>
-
-                <div className={styles.formGroup}>
-                  <label>Trạng thái</label>
-                  <select>
-                    <option>Hoạt động</option>
-                    <option>Bảo trì</option>
-                  </select>
+                  <div className={styles.formGroup}><label>Tên Phòng *</label><input type="text" name="name" value={formData.name} onChange={handleChange} placeholder="VD: Phòng 1" /></div>
+                  <div className={styles.formGroup}><label>Sức chứa (ghế) *</label><input type="number" name="capacity" value={formData.capacity} onChange={handleChange} placeholder="120" /></div>
                 </div>
               </form>
             </div>
-
             <div className={styles.modalFooter}>
               <button className={styles.cancelBtn} onClick={handleCloseModal}>Hủy</button>
-              <button className={styles.saveBtn} onClick={handleCloseModal}>Lưu Phòng Chiếu</button>
+              <button className={styles.saveBtn} onClick={handleSave} disabled={saving}>{saving ? 'Đang lưu...' : 'Lưu Phòng'}</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Modal Quản lý Sơ đồ ghế */}
       {isSeatModalOpen && selectedRoomForSeat && (
         <div className={styles.modalOverlay}>
           <div className={`${styles.modal} ${styles.seatModal}`}>
             <div className={styles.modalHeader}>
-              <h3>Cấu hình Sơ đồ ghế: {selectedRoomForSeat.name} (Rạp {cinemas.find(c => c.id === selectedRoomForSeat.cinemaId)?.name})</h3>
+              <h3>Sơ đồ ghế: {selectedRoomForSeat.name} ({cinemaName})</h3>
               <button className={styles.closeBtn} onClick={handleCloseSeatModal}><MdClose /></button>
             </div>
-            
             <div className={styles.modalBody}>
               <div className={styles.seatGuide}>
                 <div className={styles.legend}>
                   <div className={styles.legendItem}><div className={`${styles.seatBox} ${styles.seatStandard}`}></div> Ghế Thường</div>
                   <div className={styles.legendItem}><div className={`${styles.seatBox} ${styles.seatVip}`}></div> Ghế VIP</div>
                   <div className={styles.legendItem}><div className={`${styles.seatBox} ${styles.seatCouple}`}></div> Ghế Đôi</div>
-                  <div className={styles.legendItem}><div className={`${styles.seatBox} ${styles.seatBroken}`}></div> Ghế Hỏng/Trống</div>
                 </div>
-                <p className={styles.helperText}>* Click vào một ghế bất kỳ để thay đổi loại ghế.</p>
               </div>
-
-              <div className={styles.screenArea}>
-                <div className={styles.screen}>MÀN HÌNH</div>
-              </div>
-
+              <div className={styles.screenArea}><div className={styles.screen}>MÀN HÌNH</div></div>
               <div className={styles.seatGridContainer}>
-                <div className={styles.seatGrid}>
-                  {Array.from({ length: selectedRoomForSeat.rowCount }).map((_, rowIndex) => (
-                    <div key={rowIndex} className={styles.seatRow}>
-                      <span className={styles.rowLabel}>{String.fromCharCode(65 + rowIndex)}</span>
-                      {Array.from({ length: selectedRoomForSeat.colCount }).map((_, colIndex) => {
-                        // Giả lập một vài ghế VIP ở giữa, một vài ghế hỏng
-                        let seatTypeClass = styles.seatStandard;
-                        if (rowIndex > 3 && rowIndex < 7 && colIndex > 2 && colIndex < 9) seatTypeClass = styles.seatVip;
-                        if (rowIndex === 2 && colIndex === 5) seatTypeClass = styles.seatBroken;
-                        if (rowIndex === selectedRoomForSeat.rowCount - 1) seatTypeClass = styles.seatCouple;
-
-                        return (
-                          <div 
-                            key={`${rowIndex}-${colIndex}`} 
-                            className={`${styles.seatBox} ${seatTypeClass}`}
-                            title={`${String.fromCharCode(65 + rowIndex)}${colIndex + 1}`}
-                          >
-                            {colIndex + 1}
+                {selectedRoomForSeat.seats && selectedRoomForSeat.seats.length > 0 ? (
+                  <div className={styles.seatGrid}>
+                    {Object.entries(selectedRoomForSeat.seats.reduce((acc, seat) => {
+                      if (!acc[seat.row]) acc[seat.row] = [];
+                      acc[seat.row].push(seat);
+                      return acc;
+                    }, {})).sort().map(([row, seats]) => (
+                      <div key={row} className={styles.seatRow}>
+                        <span className={styles.rowLabel}>{row}</span>
+                        {seats.sort((a, b) => a.column_num - b.column_num).map(seat => (
+                          <div key={seat.id} className={`${styles.seatBox} ${seat.type === 'vip' ? styles.seatVip : seat.type === 'couple' ? styles.seatCouple : styles.seatStandard}`} title={`${seat.row}${seat.column_num}`}>
+                            {seat.column_num}
                           </div>
-                        );
-                      })}
-                    </div>
-                  ))}
-                </div>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p style={{ textAlign: 'center', color: '#aaa', padding: '30px' }}>Phòng này chưa có ghế. Vui lòng tạo ghế qua Seeder hoặc API.</p>
+                )}
               </div>
             </div>
-
             <div className={styles.modalFooter}>
-              <button className={styles.cancelBtn} onClick={handleCloseSeatModal}>Hủy</button>
-              <button className={styles.saveBtn} onClick={handleCloseSeatModal}>Lưu Sơ đồ</button>
+              <button className={styles.cancelBtn} onClick={handleCloseSeatModal}>Đóng</button>
             </div>
           </div>
         </div>

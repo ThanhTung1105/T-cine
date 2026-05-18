@@ -5,7 +5,10 @@ import RoomManagePage from '../pages/admin/RoomManagePage/RoomManagePage';
 import ShowtimeManagePage from '../pages/admin/ShowtimeManagePage/ShowtimeManagePage';
 import OrderManagePage from '../pages/admin/OrderManagePage/OrderManagePage';
 import UserManagePage from '../pages/admin/UserManagePage/UserManagePage';
-import RevenuePage from '../pages/admin/RevenuePage/RevenuePage';
+import BannerManagePage from '../pages/admin/BannerManagePage/BannerManagePage';
+import EventManagePage from '../pages/admin/EventManagePage/EventManagePage';
+import ComboManagePage from '../pages/admin/ComboManagePage/ComboManagePage';
+import PromotionManagePage from '../pages/admin/PromotionManagePage/PromotionManagePage';
 
 const adminRoutes = [
   { index: true, element: <DashboardPage /> },
@@ -15,7 +18,10 @@ const adminRoutes = [
   { path: 'lich-chieu', element: <ShowtimeManagePage /> },
   { path: 'don-hang', element: <OrderManagePage /> },
   { path: 'nguoi-dung', element: <UserManagePage /> },
-  { path: 'doanh-thu', element: <RevenuePage /> },
+  { path: 'banner', element: <BannerManagePage /> },
+  { path: 'su-kien', element: <EventManagePage /> },
+  { path: 'combo', element: <ComboManagePage /> },
+  { path: 'ma-giam-gia', element: <PromotionManagePage /> },
 ];
 
 export default adminRoutes;

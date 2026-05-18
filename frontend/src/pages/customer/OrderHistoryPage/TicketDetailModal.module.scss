@@ -1,0 +1,480 @@
+@use '../../../styles/variables' as *;
+@use '../../../styles/mixins' as *;
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 15, 25, 0.55);
+  backdrop-filter: blur(4px);
+  z-index: $z-modal;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.modal {
+  background: white;
+  width: 100%;
+  max-width: 880px;
+  max-height: calc(100vh - 48px);
+  border-radius: 18px;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+  animation: slideUp 0.25s ease-out;
+}
+
+.closeBtn {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.92);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  color: #333;
+  z-index: 5;
+  transition: all 0.2s;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+
+  &:hover {
+    background: white;
+    transform: rotate(90deg);
+    color: $color-primary;
+  }
+}
+
+/* ===== HERO ===== */
+.hero {
+  height: 200px;
+  background-size: cover;
+  background-position: center;
+  background-color: #20203a;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.heroOverlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(0, 0, 0, 0.85) 0%,
+    rgba(0, 0, 0, 0.55) 50%,
+    rgba(0, 0, 0, 0.75) 100%
+  );
+  display: flex;
+  align-items: center;
+  padding: 24px 32px;
+
+  @include responsive(sm) {
+    padding: 16px 20px;
+  }
+}
+
+.heroContent {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  width: 100%;
+
+  @include responsive(sm) {
+    gap: 14px;
+  }
+}
+
+.heroPoster {
+  width: 110px;
+  height: 160px;
+  object-fit: cover;
+  border-radius: 8px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+  flex-shrink: 0;
+
+  @include responsive(sm) {
+    width: 80px;
+    height: 115px;
+  }
+}
+
+.heroPosterPlaceholder {
+  width: 110px;
+  height: 160px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  svg { font-size: 48px; color: white; }
+}
+
+.heroText { flex: 1; min-width: 0; }
+
+.statusBadge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  margin-bottom: 10px;
+}
+
+.movieTitle {
+  color: white;
+  font-size: 26px;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+  line-height: 1.2;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+
+  @include responsive(sm) { font-size: 18px; }
+}
+
+.movieMeta {
+  color: rgba(255, 255, 255, 0.85);
+  margin: 0;
+  font-size: 13px;
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+/* ===== BODY ===== */
+.body {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 0;
+  flex: 1;
+  overflow-y: auto;
+
+  @include responsive(md) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.leftCol {
+  padding: 24px 28px;
+  border-right: 2px dashed #ececec;
+
+  @include responsive(md) {
+    border-right: none;
+    border-bottom: 2px dashed #ececec;
+  }
+}
+
+.rightCol {
+  padding: 24px 28px;
+  background: #fafbff;
+
+  @include responsive(md) { background: white; }
+}
+
+.sectionTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: #333;
+  margin: 20px 0 14px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  &:first-child { margin-top: 0; }
+
+  svg { color: $color-primary; font-size: 18px; }
+}
+
+/* ===== INFO GRID ===== */
+.infoGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.infoItem {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+
+  .infoIcon {
+    font-size: 22px;
+    color: $color-primary;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .infoLabel {
+    margin: 0;
+    font-size: 11px;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    font-weight: 600;
+  }
+
+  .infoValue {
+    margin: 4px 0 0 0;
+    font-size: 14px;
+    color: #1a1a1a;
+    font-weight: 600;
+    line-height: 1.4;
+  }
+
+  .subValue {
+    color: #666;
+    font-weight: 400;
+    font-size: 13px;
+  }
+}
+
+/* ===== SEAT TAGS ===== */
+.seatList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.seatTag {
+  background: lighten($color-primary, 38%);
+  color: $color-primary;
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 13px;
+
+  &.vip    { background: #fef3c7; color: #b45309; }
+  &.couple { background: #fce7f3; color: #be185d; }
+}
+
+/* ===== COMBO LIST ===== */
+.comboList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+
+  li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px dashed #eee;
+    font-size: 14px;
+    color: #444;
+
+    &:last-child { border-bottom: none; }
+
+    strong { color: $color-primary; }
+  }
+}
+
+/* ===== PRICE TABLE ===== */
+.priceTable {
+  background: #fafbff;
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+
+.priceRow {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  font-size: 14px;
+  color: #444;
+}
+
+.totalRow {
+  margin-top: 6px;
+  padding-top: 10px;
+  border-top: 1px dashed #ddd;
+  font-size: 16px;
+  font-weight: 700;
+  color: $color-primary;
+}
+
+.paymentInfo {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed #ddd;
+
+  p {
+    margin: 4px 0;
+    font-size: 12.5px;
+    color: #555;
+
+    strong { color: #1a1a1a; }
+  }
+}
+
+/* ===== QR CARD ===== */
+.qrCard {
+  background: white;
+  border: 1px solid #ececec;
+  border-radius: 14px;
+  padding: 20px;
+  text-align: center;
+  position: sticky;
+  top: 0;
+}
+
+.qrLabel {
+  font-size: 12px;
+  color: #666;
+  margin: 0 0 16px 0;
+  line-height: 1.4;
+}
+
+.qrImage {
+  width: 100%;
+  max-width: 220px;
+  height: auto;
+  margin: 0 auto 16px;
+  display: block;
+  border-radius: 10px;
+  border: 1px solid #eee;
+  padding: 6px;
+  background: white;
+}
+
+.qrBlocked {
+  width: 100%;
+  max-width: 220px;
+  height: 220px;
+  margin: 0 auto 16px;
+  border: 2px dashed #ddd;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #fafafa;
+  color: #999;
+
+  p {
+    margin: 0 0 6px 0;
+    font-weight: 700;
+    color: #f59e0b;
+    font-size: 14px;
+  }
+
+  span { font-size: 12px; }
+}
+
+.bookingCodeBox {
+  background: #f4f6fb;
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  text-align: left;
+  gap: 12px;
+}
+
+.codeLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: #888;
+  text-transform: uppercase;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+
+  svg { font-size: 14px; }
+}
+
+.codeValue {
+  display: block;
+  margin-top: 4px;
+  font-size: 16px;
+  color: #1a1a1a;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.copyBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid $color-primary;
+  background: white;
+  color: $color-primary;
+  font-weight: 600;
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+
+  &:hover {
+    background: $color-primary;
+    color: white;
+  }
+
+  svg { font-size: 14px; }
+}
+
+/* ===== FOOTER ===== */
+.footer {
+  padding: 16px 28px;
+  background: #fafafa;
+  border-top: 1px solid #ececec;
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  flex-shrink: 0;
+
+  @include responsive(sm) {
+    padding: 14px 20px;
+  }
+}
+
+.secondaryBtn, .dangerBtn {
+  padding: 10px 22px;
+  border-radius: 10px;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.secondaryBtn {
+  background: #e7e9ee;
+  color: #333;
+  &:hover { background: #d6d9e0; }
+}
+
+.dangerBtn {
+  background: #ef4444;
+  color: white;
+  &:hover { background: #dc2626; }
+  &:disabled { opacity: 0.6; cursor: not-allowed; }
+}

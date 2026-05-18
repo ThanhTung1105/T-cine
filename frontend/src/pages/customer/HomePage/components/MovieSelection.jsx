@@ -1,18 +1,59 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { MdChevronRight, MdChevronLeft, MdPlayArrow, MdLocalPlay, MdClose, MdStar } from 'react-icons/md';
+import movieApi from '../../../../api/movieApi';
 import styles from './MovieSelection.module.scss';
 import homeStyles from '../HomePage.module.scss';
 
+const STORAGE_URL = import.meta.env.VITE_STORAGE_URL || 'http://localhost:8000/storage';
+
 const MovieSelection = () => {
   const [trailerUrl, setTrailerUrl] = useState(null);
-  const movies = [
-    { id: 1, title: 'Tiêu đề phim 1', rating: 4.8 },
-    { id: 2, title: 'Tiêu đề phim 2', rating: 4.5 },
-    { id: 3, title: 'Tiêu đề phim 3', rating: 4.9 },
-    { id: 4, title: 'Tiêu đề phim 4', rating: 4.2 }
-  ]; // 4 phim placeholder
-  const placeholderTrailer = "https://www.youtube.com/embed/dQw4w9WgXcQ";
+  const [movies, setMovies] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchMovies = async () => {
+      try {
+        const res = await movieApi.getNowShowing();
+        setMovies((res.data || []).slice(0, 8));
+      } catch (error) {
+        console.error('Lỗi tải danh sách phim:', error);
+        setMovies([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchMovies();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className={styles.movieSelectionWrapper}>
+        <div className={homeStyles.container}>
+          <div className={homeStyles.sectionTitleWrapper}>
+            <h2 className={homeStyles.sectionTitle}>MOVIE SELECTION</h2>
+          </div>
+          <p style={{ textAlign: 'center', color: '#aaa', padding: '40px 0' }}>Đang tải danh sách phim...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (movies.length === 0) {
+    return (
+      <div className={styles.movieSelectionWrapper}>
+        <div className={homeStyles.container}>
+          <div className={homeStyles.sectionTitleWrapper}>
+            <h2 className={homeStyles.sectionTitle}>MOVIE SELECTION</h2>
+          </div>
+          <p style={{ textAlign: 'center', color: '#aaa', padding: '40px 0' }}>
+            Chưa có phim nào. Vui lòng thêm phim từ trang Quản trị.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.movieSelectionWrapper}>
@@ -22,7 +63,6 @@ const MovieSelection = () => {
         </div>
 
         <div className={styles.movieGridWrapper}>
-          {/* Mũi tên điều hướng trái (ẩn trong thiết kế nhưng thường có) */}
           <div className={`${homeStyles.sliderArrow} ${homeStyles.prev}`}>
             <MdChevronLeft />
           </div>
@@ -31,20 +71,35 @@ const MovieSelection = () => {
             {movies.map((movie) => (
               <div key={movie.id} className={styles.movieCard}>
                 <div className={styles.posterContainer}>
-                  <div className={styles.ageRating}>T18</div>
-                  <div className={styles.movieRating}>
-                    <MdStar className={styles.starIcon} />
-                    <span>{movie.rating}</span>
-                  </div>
-                  <div className={homeStyles.placeholderImage}>
-                    Poster Phim {movie.id} <br /> (250x350)
-                  </div>
+                  {movie.age_rating && (
+                    <div className={styles.ageRating}>{movie.age_rating}</div>
+                  )}
+                  {movie.rating > 0 && (
+                    <div className={styles.movieRating}>
+                      <MdStar className={styles.starIcon} />
+                      <span>{movie.rating}</span>
+                    </div>
+                  )}
+                  
+                  {movie.poster ? (
+                    <img
+                      src={movie.poster.startsWith('http') ? movie.poster : `${STORAGE_URL}/${movie.poster}`}
+                      alt={movie.title}
+                      className={styles.posterImage}
+                    />
+                  ) : (
+                    <div className={homeStyles.placeholderImage}>
+                      {movie.title} <br /> (250x350)
+                    </div>
+                  )}
                   
                   <div className={styles.hoverOverlay}>
-                    <button className={styles.trailerBtn} onClick={() => setTrailerUrl(placeholderTrailer)}>
-                      <MdPlayArrow className={styles.playIcon} />
-                      <span>TRAILER</span>
-                    </button>
+                    {movie.trailer_url && (
+                      <button className={styles.trailerBtn} onClick={() => setTrailerUrl(movie.trailer_url)}>
+                        <MdPlayArrow className={styles.playIcon} />
+                        <span>TRAILER</span>
+                      </button>
+                    )}
                     
                     <div className={styles.bottomActions}>
                       <h3 className={styles.overlayTitle}>{movie.title}</h3>
@@ -63,7 +118,6 @@ const MovieSelection = () => {
             ))}
           </div>
 
-          {/* Mũi tên điều hướng phải */}
           <div className={`${homeStyles.sliderArrow} ${homeStyles.next}`}>
             <MdChevronRight />
           </div>

@@ -32,6 +32,36 @@
   border: 1px dashed #999;
 }
 
+.slideImage {
+  width: 100%;
+  height: 100%;
+  background-size: cover;
+  background-position: center;
+  background-color: #1a1a1a;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-start;
+  padding: 32px 48px;
+  color: white;
+  cursor: pointer;
+
+  .slideTitle {
+    font-size: 28px;
+    font-weight: 700;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
+    background: rgba(0, 0, 0, 0.35);
+    padding: 8px 16px;
+    border-radius: 6px;
+
+    @include responsive(md) {
+      font-size: 20px;
+    }
+    @include responsive(sm) {
+      font-size: 16px;
+    }
+  }
+}
+
 /* Tùy chỉnh màu của Swiper pagination/navigation để hợp tông màu Xanh dương */
 :global(.swiper-pagination-bullet-active) {
   background-color: $color-primary !important;

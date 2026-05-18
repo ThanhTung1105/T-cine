@@ -2,13 +2,13 @@ import axiosClient from './axiosClient';
 
 const authApi = {
   // Đăng ký
-  register: (data) => axiosClient.post('/auth/register', data),
+  register: (data) => axiosClient.post('/register', data),
 
   // Đăng nhập
-  login: (data) => axiosClient.post('/auth/login', data),
+  login: (data) => axiosClient.post('/login', data),
 
   // Đăng xuất
-  logout: () => axiosClient.post('/auth/logout'),
+  logout: () => axiosClient.post('/logout'),
 
   // Lấy thông tin user hiện tại
   getProfile: () => axiosClient.get('/auth/me'),

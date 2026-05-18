@@ -33,7 +33,6 @@ const LoginPage = () => {
 
     try {
       const res = await login({ email, password });
-      // Lấy role từ dữ liệu giả trả về để chuyển hướng ngay lập tức (tránh chớp màn hình)
       const role = res.data.user.role;
       if (role === 'admin') {
         navigate('/admin', { replace: true });
@@ -42,7 +41,7 @@ const LoginPage = () => {
         navigate(from, { replace: true });
       }
     } catch (err) {
-      console.error("Login failed", err);
+      // Lỗi đã được xử lý trong useAuthStore
     }
   };
 
@@ -57,23 +56,17 @@ const LoginPage = () => {
           </div>
 
           <form onSubmit={handleSubmit} className={styles.authForm}>
-            
-            <div className={styles.mockAlert}>
-              <strong>💡 Dữ liệu giả lập (Mock):</strong>
-              - Nhập Email: <b>admin</b> để đăng nhập vào trang Admin.<br/>
-              - Nhập Email khác để đăng nhập tài khoản Khách. (Mật khẩu nhập gì cũng được)
-            </div>
 
             {error && <div className={styles.errorMsg}>{error}</div>}
 
             <div className={styles.formGroup}>
-              <label htmlFor="email">Email / Tên đăng nhập</label>
+              <label htmlFor="email">Email</label>
               <input
-                type="text"
+                type="email"
                 id="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="Ví dụ: admin"
+                placeholder="Nhập địa chỉ email"
                 required
               />
             </div>

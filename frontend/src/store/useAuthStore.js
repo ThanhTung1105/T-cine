@@ -13,36 +13,26 @@ const useAuthStore = create((set) => ({
   login: async (credentials) => {
     set({ isLoading: true, error: null });
     try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 800));
+      const res = await authApi.login(credentials);
 
-      // Mock logic: nếu username/email là 'admin' thì role là admin, ngược lại là customer
-      const isAdmin = credentials.email === 'admin' || credentials.email === 'admin@gmail.com';
-      
-      const mockUser = {
-        id: isAdmin ? 1 : 2,
-        name: isAdmin ? 'Administrator' : 'Customer',
-        email: credentials.email,
-        role: isAdmin ? 'admin' : 'customer',
-        avatar: 'https://ui-avatars.com/api/?name=' + (isAdmin ? 'Admin' : 'Customer')
-      };
-      const mockToken = 'mock-jwt-token-' + Date.now();
-
-      localStorage.setItem('access_token', mockToken);
-      localStorage.setItem('user', JSON.stringify(mockUser));
+      localStorage.setItem('access_token', res.token);
+      localStorage.setItem('user', JSON.stringify(res.user));
 
       set({
-        user: mockUser,
-        token: mockToken,
+        user: res.user,
+        token: res.token,
         isAuthenticated: true,
         isLoading: false,
       });
 
-      return { data: { user: mockUser, token: mockToken } };
+      return { data: res };
     } catch (error) {
+      const message = error.response?.data?.message
+        || error.response?.data?.errors?.email?.[0]
+        || 'Đăng nhập thất bại. Vui lòng thử lại.';
       set({
         isLoading: false,
-        error: 'Đăng nhập thất bại (Mock Error)',
+        error: message,
       });
       throw error;
     }
@@ -51,21 +41,28 @@ const useAuthStore = create((set) => ({
   register: async (data) => {
     set({ isLoading: true, error: null });
     try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 800));
-      
+      const res = await authApi.register(data);
+
       set({ isLoading: false });
-      return { data: { message: 'Đăng ký thành công (Mock)' } };
+      return { data: res };
     } catch (error) {
+      const message = error.response?.data?.message
+        || error.response?.data?.errors?.email?.[0]
+        || 'Đăng ký thất bại. Vui lòng thử lại.';
       set({
         isLoading: false,
-        error: 'Đăng ký thất bại (Mock Error)',
+        error: message,
       });
       throw error;
     }
   },
 
-  logout: () => {
+  logout: async () => {
+    try {
+      await authApi.logout();
+    } catch (e) {
+      // Token có thể đã hết hạn, bỏ qua lỗi
+    }
     localStorage.removeItem('access_token');
     localStorage.removeItem('user');
     set({

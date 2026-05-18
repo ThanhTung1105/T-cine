@@ -461,15 +461,16 @@
     color: white;
     padding: 12px;
     border-radius: 4px;
+    border: none;
+    cursor: pointer;
     font-weight: bold;
     text-decoration: none;
     transition: background-color $transition-fast;
-    
-    &:hover {
-      background-color: $color-primary-dark;
-    }
-    
-    &.disabled {
+
+    &:hover { background-color: $color-primary-dark; }
+
+    &.disabled,
+    &:disabled {
       background-color: #ccc;
       cursor: not-allowed;
       pointer-events: none;
