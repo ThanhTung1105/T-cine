@@ -14,7 +14,6 @@ class Showtime extends Model
         'room_id',
         'start_time',
         'end_time',
-        'base_price',
     ];
 
     public function movie()

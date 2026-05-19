@@ -19,6 +19,16 @@ const cinemaApi = {
   createRoom: (cinemaId, data) => axiosClient.post(`/admin/cinemas/${cinemaId}/rooms`, data),
   updateRoom: (cinemaId, roomId, data) => axiosClient.put(`/admin/cinemas/${cinemaId}/rooms/${roomId}`, data),
   deleteRoom: (cinemaId, roomId) => axiosClient.delete(`/admin/cinemas/${cinemaId}/rooms/${roomId}`),
+
+  // Quản lý ghế của phòng
+  getSeats: (cinemaId, roomId) =>
+    axiosClient.get(`/admin/cinemas/${cinemaId}/rooms/${roomId}/seats`),
+  generateSeats: (cinemaId, roomId, data) =>
+    axiosClient.post(`/admin/cinemas/${cinemaId}/rooms/${roomId}/seats/generate`, data),
+  updateSeat: (cinemaId, roomId, seatId, data) =>
+    axiosClient.put(`/admin/cinemas/${cinemaId}/rooms/${roomId}/seats/${seatId}`, data),
+  clearSeats: (cinemaId, roomId) =>
+    axiosClient.delete(`/admin/cinemas/${cinemaId}/rooms/${roomId}/seats`),
 };
 
 export default cinemaApi;

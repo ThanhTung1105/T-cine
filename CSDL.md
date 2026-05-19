@@ -11,7 +11,8 @@ Dưới đây là các bảng cơ sở dữ liệu dự kiến cho hệ thống 
 | 2 | `name` | Varchar | 255 | | Tên rạp |
 | 3 | `address` | Varchar | 255 | | Địa chỉ rạp |
 | 4 | `city` | Varchar | 100 | | Thành phố |
-| 5 | `total_screens`| Int | | | Tổng số phòng chiếu |
+
+> Lưu ý: trước đây có cột `total_screens` nhập tay khi tạo rạp, nhưng đã được loại bỏ vì gây nhầm lẫn với số phòng chiếu thực tế. Hiện tại số phòng chiếu được tính tự động qua `withCount('rooms')` (alias `rooms_count`).
 
 ---
 
@@ -74,7 +75,8 @@ Dưới đây là các bảng cơ sở dữ liệu dự kiến cho hệ thống 
 | 3 | `room_id` | Int | | Khóa ngoại (Rooms.id) | Mã phòng chiếu |
 | 4 | `start_time` | Datetime| | | Thời gian bắt đầu |
 | 5 | `end_time` | Datetime| | | Thời gian kết thúc |
-| 6 | `base_price` | Decimal | | | Giá vé cơ bản |
+
+> Lưu ý: trước đây có cột `base_price` lưu giá riêng cho từng suất chiếu, đã được **drop** từ migration `2026_05_18_170100_drop_base_price_from_showtimes_table`. Giá vé hiện nay tra từ bảng **`pricings`** (3.9.14) theo cặp (loại ghế × loại ngày). Xem chi tiết tại `Pricing_Module_Plan.md`.
 
 ---
 
@@ -193,3 +195,59 @@ Dưới đây là các bảng cơ sở dữ liệu dự kiến cho hệ thống 
 | 4 | `link_url` | Varchar | 255 | | Đường dẫn khi click |
 | 5 | `position` | Int | | | Vị trí hiển thị |
 | 6 | `is_active` | Boolean | | | Trạng thái hiển thị (true/false) |
+
+---
+
+### 3.9.14 Bảng Pricings
+**Mục đích:** Bảng Pricings lưu trữ bảng giá vé tập trung của toàn hệ thống, thay cho `Showtimes.base_price` cũ. Mỗi suất chiếu sẽ lookup giá theo cặp `(seat_type, day_type)`.
+
+| STT | Trường dữ liệu | Kiểu dữ liệu | Độ dài | Ràng buộc | Mô tả |
+| :---: | :--- | :---: | :---: | :--- | :--- |
+| 1 | `id` | Int | | Khóa chính | Mã dòng giá |
+| 2 | `seat_type` | Enum | | normal / vip / couple | Loại ghế |
+| 3 | `day_type` | Enum | | weekday / weekend / holiday | Loại ngày áp dụng |
+| 4 | `price` | Decimal(10,2) | | ≥ 0 | Giá vé |
+| 5 | `is_active` | Boolean | | default true | Cho phép tắt 1 cell mà không cần xoá |
+| 6 | `created_at` / `updated_at` | Timestamp | | | |
+
+- **UNIQUE** `(seat_type, day_type)` — đảm bảo tối đa 9 cell (3 × 3).
+- Phân loại ngày tự động trong code:
+  - `holiday`: ngày khớp danh sách `config('holidays.dates')`
+  - `weekend`: Thứ 7, Chủ nhật
+  - `weekday`: còn lại
+- Seed mặc định 9 dòng qua `PricingSeeder` (chạy `php artisan db:seed --class=PricingSeeder`).
+
+---
+
+### 3.9.15 Bảng Events
+**Mục đích:** Bảng Events lưu trữ tin tức / ưu đãi / chương trình thành viên hiển thị trên trang chủ và trang Sự kiện. Có thể đính kèm 1 mã giảm giá để khách copy nhanh.
+
+| STT | Trường dữ liệu | Kiểu dữ liệu | Độ dài | Ràng buộc | Mô tả |
+| :---: | :--- | :---: | :---: | :--- | :--- |
+| 1 | `id` | Int | | Khóa chính | Mã sự kiện |
+| 2 | `title` | Varchar | 255 | | Tiêu đề |
+| 3 | `slug` | Varchar | 255 | Duy nhất | Đường dẫn SEO |
+| 4 | `description` | Text | | | Mô tả ngắn |
+| 5 | `content` | Longtext | | | Nội dung chi tiết (HTML) |
+| 6 | `image` | Varchar | 255 | | Ảnh đại diện |
+| 7 | `category` | Enum | | promotion / member / news | Phân loại |
+| 8 | `promotion_id` | Int | | Khóa ngoại (Promotions.id), nullable, onDelete=setNull | Mã giảm giá đính kèm |
+| 9 | `valid_from` | Date | | nullable | Ngày bắt đầu hiển thị |
+| 10 | `valid_to` | Date | | nullable | Ngày kết thúc hiển thị |
+| 11 | `is_active` | Boolean | | default true | Trạng thái hiển thị |
+
+---
+
+### 3.9.16 Bảng Personal Access Tokens
+**Mục đích:** Bảng do Laravel Sanctum tạo, lưu API token cho cơ chế đăng nhập (Bearer Token). Không can thiệp thủ công.
+
+| STT | Trường dữ liệu | Kiểu dữ liệu | Mô tả |
+| :---: | :--- | :---: | :--- |
+| 1 | `id` | Int | Khóa chính |
+| 2 | `tokenable_type` / `tokenable_id` | Polymorphic | Trỏ về Users |
+| 3 | `name` | Varchar | Tên token |
+| 4 | `token` | Varchar (hashed) | Hash của plain text token |
+| 5 | `abilities` | Text | JSON các quyền |
+| 6 | `last_used_at` | Timestamp | Lần dùng gần nhất |
+| 7 | `expires_at` | Timestamp | Hết hạn |
+| 8 | `created_at` / `updated_at` | Timestamp | |

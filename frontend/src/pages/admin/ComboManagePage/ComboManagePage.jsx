@@ -265,7 +265,7 @@ const ComboManagePage = () => {
                   </div>
                   <small className={styles.hint}>
                     ⚠️ <strong>Yêu cầu:</strong> Tỉ lệ <strong>vuông 1:1</strong> (khuyến nghị <strong>500×500px</strong>),
-                    định dạng JPG/PNG/WEBP, dung lượng ≤ 2MB. Ảnh nền trong suốt sẽ đẹp hơn.
+                    định dạng JPG/PNG/WEBP, dung lượng ≤ 10MB. Ảnh nền trong suốt sẽ đẹp hơn.
                   </small>
                 </div>
               </form>

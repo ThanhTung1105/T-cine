@@ -6,6 +6,7 @@ use App\Models\Booking;
 use App\Models\Ticket;
 use App\Models\BookingCombo;
 use App\Models\Seat;
+use App\Models\Pricing;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
@@ -47,25 +48,20 @@ class BookingController extends Controller
             ], 422);
         }
 
-        // Tính tổng tiền vé
+        // Tính tổng tiền vé — lookup giá từ bảng pricings theo (seat_type, day_type)
         $showtime = \App\Models\Showtime::findOrFail($request->showtime_id);
         $seats = Seat::whereIn('id', $request->seat_ids)->get();
         $totalTicketAmount = 0;
         $ticketsData = [];
 
         foreach ($seats as $seat) {
-            $price = $showtime->base_price;
-            if ($seat->type === 'vip') {
-                $price *= 1.3; // VIP +30%
-            } elseif ($seat->type === 'couple') {
-                $price *= 1.5; // Couple +50%
-            }
+            $price = Pricing::resolve($seat->type, $showtime->start_time);
 
             $ticketsData[] = [
-                'seat_id' => $seat->id,
+                'seat_id'    => $seat->id,
                 'seat_label' => $seat->row . $seat->column_num,
-                'seat_type' => $seat->type,
-                'price' => $price,
+                'seat_type'  => $seat->type,
+                'price'      => $price,
             ];
             $totalTicketAmount += $price;
         }

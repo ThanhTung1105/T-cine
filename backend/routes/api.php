@@ -15,6 +15,7 @@ use App\Http\Controllers\PromotionController;
 use App\Http\Controllers\BannerController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\PricingController;
 
 // Controllers Admin
 use App\Http\Controllers\Admin\MovieController as AdminMovieController;
@@ -28,6 +29,8 @@ use App\Http\Controllers\Admin\BannerController as AdminBannerController;
 use App\Http\Controllers\Admin\EventController as AdminEventController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\UploadController;
+use App\Http\Controllers\Admin\SeatController as AdminSeatController;
+use App\Http\Controllers\Admin\PricingController as AdminPricingController;
 
 /*
 |--------------------------------------------------------------------------
@@ -68,6 +71,9 @@ Route::get('/promotions/check', [PromotionController::class, 'check']);
 // --- Sự kiện / Ưu đãi ---
 Route::get('/events', [EventController::class, 'index']);
 Route::get('/events/{id}', [EventController::class, 'show']);
+
+// --- Bảng giá vé (public read-only) ---
+Route::get('/pricings/active', [PricingController::class, 'active']);
 
 /*
 |--------------------------------------------------------------------------
@@ -125,6 +131,12 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/cinemas/{id}/rooms/{roomId}', [AdminCinemaController::class, 'updateRoom']);
         Route::delete('/cinemas/{id}/rooms/{roomId}', [AdminCinemaController::class, 'destroyRoom']);
 
+        // Quản lý Ghế của phòng
+        Route::get('/cinemas/{cinemaId}/rooms/{roomId}/seats', [AdminSeatController::class, 'index']);
+        Route::post('/cinemas/{cinemaId}/rooms/{roomId}/seats/generate', [AdminSeatController::class, 'generate']);
+        Route::put('/cinemas/{cinemaId}/rooms/{roomId}/seats/{seatId}', [AdminSeatController::class, 'update']);
+        Route::delete('/cinemas/{cinemaId}/rooms/{roomId}/seats', [AdminSeatController::class, 'destroyAll']);
+
         // Quản lý Suất chiếu
         Route::get('/showtimes', [AdminShowtimeController::class, 'index']);
         Route::post('/showtimes', [AdminShowtimeController::class, 'store']);
@@ -163,5 +175,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/events', [AdminEventController::class, 'store']);
         Route::put('/events/{id}', [AdminEventController::class, 'update']);
         Route::delete('/events/{id}', [AdminEventController::class, 'destroy']);
+
+        // Quản lý Bảng giá vé
+        Route::get('/pricings', [AdminPricingController::class, 'index']);
+        Route::put('/pricings', [AdminPricingController::class, 'bulkUpdate']);
     });
 });

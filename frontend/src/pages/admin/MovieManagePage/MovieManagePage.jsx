@@ -280,8 +280,17 @@ const MovieManagePage = () => {
                 </div>
 
                 <div className={styles.formGroup}>
-                  <label>Link Trailer (Youtube embed)</label>
-                  <input type="url" name="trailer_url" value={formData.trailer_url} onChange={handleChange} placeholder="https://www.youtube.com/embed/..." />
+                  <label>Link Trailer (YouTube)</label>
+                  <input
+                    type="url"
+                    name="trailer_url"
+                    value={formData.trailer_url}
+                    onChange={handleChange}
+                    placeholder="https://www.youtube.com/watch?v=... hoặc https://youtu.be/..."
+                  />
+                  <small style={{ color: '#888', fontSize: 12, marginTop: 4, display: 'block' }}>
+                    Hỗ trợ mọi định dạng: youtube.com/watch?v=…, youtu.be/…, youtube.com/embed/…, youtube.com/shorts/…
+                  </small>
                 </div>
 
                 {/* Khu vực Upload Poster */}
@@ -305,7 +314,7 @@ const MovieManagePage = () => {
                   </div>
                   <small className={styles.uploadHint}>
                     ⚠️ <strong>Yêu cầu:</strong> Tỉ lệ <strong>dọc 2:3</strong> (khuyến nghị <strong>600×900px</strong>),
-                    định dạng JPG/PNG/WEBP, dung lượng ≤ 2MB.
+                    định dạng JPG/PNG/WEBP, dung lượng ≤ 10MB.
                   </small>
                   <small style={{ color: '#9ca3af', fontSize: '12px', marginTop: 4 }}>
                     Banner quảng cáo trang chủ được quản lý riêng tại mục <strong>Banner trang chủ</strong>.

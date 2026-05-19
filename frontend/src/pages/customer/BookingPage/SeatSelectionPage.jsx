@@ -22,6 +22,7 @@ const SeatSelectionPage = () => {
   } = useBookingStore();
 
   const [seats, setSeats] = useState([]);
+  const [prices, setPrices] = useState({ normal: 0, vip: 0, couple: 0 });
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState(null);
 
@@ -44,6 +45,7 @@ const SeatSelectionPage = () => {
           room: d.room,
         });
         setSeats(d.seats || []);
+        setPrices(d.prices || { normal: 0, vip: 0, couple: 0 });
       } catch (e) {
         console.error(e);
         setErr('Không tải được dữ liệu suất chiếu.');
@@ -137,9 +139,18 @@ const SeatSelectionPage = () => {
             </div>
 
             <div className={styles.legend}>
-              <div className={styles.legendItem}><span className={`${styles.seatBox} ${styles.standard}`}></span> Standard</div>
-              <div className={styles.legendItem}><span className={`${styles.seatBox} ${styles.vip}`}></span> VIP</div>
-              <div className={styles.legendItem}><span className={`${styles.seatBox} ${styles.couple}`}></span> Couple</div>
+              <div className={styles.legendItem}>
+                <span className={`${styles.seatBox} ${styles.standard}`}></span>
+                Standard {prices.normal ? <strong>({Number(prices.normal).toLocaleString('vi-VN')}đ)</strong> : null}
+              </div>
+              <div className={styles.legendItem}>
+                <span className={`${styles.seatBox} ${styles.vip}`}></span>
+                VIP {prices.vip ? <strong>({Number(prices.vip).toLocaleString('vi-VN')}đ)</strong> : null}
+              </div>
+              <div className={styles.legendItem}>
+                <span className={`${styles.seatBox} ${styles.couple}`}></span>
+                Couple {prices.couple ? <strong>({Number(prices.couple).toLocaleString('vi-VN')}đ)</strong> : null}
+              </div>
               <div className={styles.legendItem}><span className={`${styles.seatBox} ${styles.selected}`}></span> Ghế đã chọn</div>
               <div className={styles.legendItem}><span className={`${styles.seatBox} ${styles.sold}`}></span> Ghế đã bán</div>
             </div>

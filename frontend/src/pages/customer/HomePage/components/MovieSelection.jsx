@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { MdChevronRight, MdChevronLeft, MdPlayArrow, MdLocalPlay, MdClose, MdStar } from 'react-icons/md';
 import movieApi from '../../../../api/movieApi';
+import { toYouTubeEmbedUrl } from '../../../../utils/youtube';
 import styles from './MovieSelection.module.scss';
 import homeStyles from '../HomePage.module.scss';
 
@@ -94,8 +95,11 @@ const MovieSelection = () => {
                   )}
                   
                   <div className={styles.hoverOverlay}>
-                    {movie.trailer_url && (
-                      <button className={styles.trailerBtn} onClick={() => setTrailerUrl(movie.trailer_url)}>
+                    {toYouTubeEmbedUrl(movie.trailer_url) && (
+                      <button
+                        className={styles.trailerBtn}
+                        onClick={() => setTrailerUrl(toYouTubeEmbedUrl(movie.trailer_url))}
+                      >
                         <MdPlayArrow className={styles.playIcon} />
                         <span>TRAILER</span>
                       </button>

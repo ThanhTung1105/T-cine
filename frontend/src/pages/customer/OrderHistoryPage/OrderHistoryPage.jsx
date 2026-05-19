@@ -11,6 +11,8 @@ import {
 } from 'react-icons/md';
 import bookingApi from '../../../api/bookingApi';
 import TicketDetailModal from './TicketDetailModal';
+import { notify } from '../../../utils/notify';
+import { getErrorMessage } from '../../../utils/helpers';
 import styles from './OrderHistoryPage.module.scss';
 
 const STORAGE_URL = import.meta.env.VITE_STORAGE_URL || 'http://localhost:8000/storage';
@@ -83,8 +85,9 @@ const OrderHistoryPage = () => {
         prev.map((b) => (b.id === id ? { ...b, status: 'cancelled' } : b))
       );
       setSelected((prev) => (prev?.id === id ? { ...prev, status: 'cancelled' } : prev));
+      notify.success('Đã hủy đơn đặt vé.');
     } catch (e) {
-      alert(e.response?.data?.message || 'Hủy đơn thất bại!');
+      notify.error(getErrorMessage(e, 'Hủy đơn thất bại!'));
     }
   };
 

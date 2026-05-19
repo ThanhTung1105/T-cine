@@ -57,3 +57,41 @@ export const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 export const getImageUrl = (url, fallback = '/images/placeholder-movie.jpg') => {
   return url || fallback;
 };
+
+/**
+ * Trích xuất message lỗi thân thiện từ axios error
+ * - Validation 422: gộp tất cả message
+ * - 401/403/404/500: lấy message từ server
+ * - Timeout / Network: trả về message rõ ràng
+ * @param {any} error - axios error object
+ * @param {string} fallback - message mặc định nếu không xác định được
+ * @returns {string}
+ */
+export const getErrorMessage = (error, fallback = 'Có lỗi xảy ra, vui lòng thử lại!') => {
+  if (!error) return fallback;
+
+  if (error.code === 'ECONNABORTED' || /timeout/i.test(error.message || '')) {
+    return 'Máy chủ phản hồi quá lâu (timeout). Vui lòng thử lại sau ít giây.';
+  }
+
+  if (!error.response) {
+    return 'Không thể kết nối đến máy chủ. Kiểm tra backend đã chạy chưa?';
+  }
+
+  const { status, data } = error.response;
+
+  if (status === 422 && data?.errors && typeof data.errors === 'object') {
+    const list = Object.values(data.errors).flat();
+    if (list.length) return list.join('\n');
+  }
+
+  if (data?.message) return data.message;
+  if (data?.error) return typeof data.error === 'string' ? data.error : JSON.stringify(data.error);
+
+  if (status === 401) return 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.';
+  if (status === 403) return 'Bạn không có quyền thực hiện thao tác này.';
+  if (status === 404) return 'Không tìm thấy tài nguyên yêu cầu.';
+  if (status >= 500) return 'Lỗi máy chủ. Vui lòng thử lại sau.';
+
+  return fallback;
+};

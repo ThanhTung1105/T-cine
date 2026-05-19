@@ -282,10 +282,10 @@ POST {{base_url}}/admin/showtimes
     "movie_id": 1,
     "room_id": 1,
     "start_time": "2025-06-01 14:00:00",
-    "end_time": "2025-06-01 17:01:00",
-    "base_price": 75000
+    "end_time": "2025-06-01 17:01:00"
 }
 ```
+> Lưu ý: từ bản 18/05/2026 đã bỏ `base_price`. Giá vé lấy tự động từ bảng `pricings` (xem API #73-75).
 
 ### API #24: Lịch chiếu theo phim
 ```

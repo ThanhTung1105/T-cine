@@ -65,7 +65,8 @@ return [
     |
     */
 
-    'timezone' => 'UTC',
+    // Giờ Việt Nam (UTC+7) — lịch chiếu, đặt vé, phân loại ngày thường/cuối tuần đều theo múi này
+    'timezone' => env('APP_TIMEZONE', 'Asia/Ho_Chi_Minh'),
 
     /*
     |--------------------------------------------------------------------------

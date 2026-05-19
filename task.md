@@ -34,7 +34,7 @@
 - [x] Khởi tạo dự án Backend & Cấu hình MySQL
 - [x] Tạo file Migration cho 13 bảng CSDL (+ bảng Events bổ sung)
 - [x] Khởi tạo các Model và thiết lập Relationship (1-N, N-N)
-- [x] Xây dựng các API cơ bản (CRUD) cho hệ thống ✅ (68/68 endpoints)
+- [x] Xây dựng các API cơ bản (CRUD) cho hệ thống ✅ (75/75 endpoints)
 - [x] Bổ sung ràng buộc Unique / Check cho CSDL (migration `add_unique_and_check_constraints`)
 - [x] Cấu hình CORS, `storage:link`, Sanctum Token Auth, middleware `admin`
 - [x] Seeder Admin (`AdminSeeder`) & Event (`EventSeeder`)
@@ -78,11 +78,11 @@
 ### 5.4 API Suất Chiếu (ShowtimeController) ✅
 | # | Method | Endpoint | Mô tả | Trạng thái |
 |---|--------|----------|-------|:----------:|
-| 24 | GET | `/api/movies/{movieId}/showtimes` | Lấy lịch chiếu theo phim | [x] |
+| 24 | GET | `/api/movies/{movieId}/showtimes` | Lấy lịch chiếu theo phim (trả `from_price` từ bảng giá) | [x] |
 | 25 | GET | `/api/cinemas/{cinemaId}/showtimes` | Lấy lịch chiếu theo rạp | [x] |
-| 26 | GET | `/api/showtimes/{id}` | Chi tiết suất chiếu (kèm trạng thái ghế) | [x] |
+| 26 | GET | `/api/showtimes/{id}` | Chi tiết suất chiếu (kèm trạng thái ghế, `prices` matrix, `seats[].price` resolve sẵn) | [x] |
 | 27 | GET | `/api/admin/showtimes` | [Admin] Lấy tất cả suất chiếu | [x] |
-| 28 | POST | `/api/admin/showtimes` | [Admin] Thêm suất chiếu | [x] |
+| 28 | POST | `/api/admin/showtimes` | [Admin] Thêm suất chiếu (không cần nhập giá, lấy từ bảng `pricings`) | [x] |
 | 29 | PUT | `/api/admin/showtimes/{id}` | [Admin] Cập nhật suất chiếu | [x] |
 | 30 | DELETE | `/api/admin/showtimes/{id}` | [Admin] Xóa suất chiếu | [x] |
 
@@ -156,6 +156,23 @@
 |---|--------|----------|-------|:----------:|
 | 68 | POST | `/api/admin/upload` | [Admin] Upload ảnh (poster, banner, combo...) → trả về URL trong `storage/` | [x] |
 
+### 5.13 API Quản lý Ghế (SeatController — Admin) ✅ — *mới bổ sung*
+| # | Method | Endpoint | Mô tả | Trạng thái |
+|---|--------|----------|-------|:----------:|
+| 69 | GET | `/api/admin/cinemas/{cId}/rooms/{rId}/seats` | [Admin] Lấy sơ đồ ghế của phòng | [x] |
+| 70 | POST | `/api/admin/cinemas/{cId}/rooms/{rId}/seats/generate` | [Admin] Tạo sơ đồ ghế (rows × cols). Hàng đôi chỉ sinh `floor(cols/2)` ghế (mỗi ghế đôi rộng = 2 ghế thường nên giữ thẳng hàng). Validate sức chứa dùng `≤ room.capacity` (1 ghế đôi = 2 chỗ). **KHÔNG đụng tới `capacity`** | [x] |
+| 71 | PUT | `/api/admin/cinemas/{cId}/rooms/{rId}/seats/{seatId}` | [Admin] Cập nhật `type` (normal/vip/couple) hoặc `status` (active/broken) của 1 ghế | [x] |
+| 72 | DELETE | `/api/admin/cinemas/{cId}/rooms/{rId}/seats` | [Admin] Xoá toàn bộ ghế của phòng (reset sơ đồ) | [x] |
+
+### 5.14 API Bảng giá vé (PricingController) ✅ — *mới bổ sung*
+Tách giá vé khỏi `Showtime.base_price`. Toàn hệ thống dùng chung 9 dòng `pricings` (3 loại ghế × 3 loại ngày). Chi tiết tại `Pricing_Module_Plan.md`.
+
+| # | Method | Endpoint | Mô tả | Trạng thái |
+|---|--------|----------|-------|:----------:|
+| 73 | GET | `/api/pricings/active` | Bảng giá hiện hành dạng matrix `{ normal: {weekday/weekend/holiday}, vip: ..., couple: ... }` | [x] |
+| 74 | GET | `/api/admin/pricings` | [Admin] Lấy toàn bộ 9 dòng + matrix | [x] |
+| 75 | PUT | `/api/admin/pricings` | [Admin] Upsert hàng loạt 9 cell (bulk update, transaction). Validate `seat_type ∈ {normal,vip,couple}`, `day_type ∈ {weekday,weekend,holiday}`, `price ≥ 0` | [x] |
+
 ---
 
 ## Phase 6: Tích Hợp API Frontend ✅
@@ -172,7 +189,7 @@ Tham khảo chi tiết tại `Frontend_API_Integration_Plan.md`.
 - [x] `MovieSelection.jsx` — API `/movies/now-showing`
 - [x] `MovieListPage.jsx` — API phim đang/sắp chiếu + tìm kiếm
 - [x] `MovieDetailPage.jsx` — API `/movies/{id}` + trailer
-- [x] `BookingPage.jsx` — API lịch chiếu theo phim + ngày + chọn ghế
+- [x] `BookingPage.jsx` — Luồng chọn 3 bước **Rạp → Ngày → Suất chiếu** (tuần tự, có badge số bước, các block sau sẽ disable mờ khi chưa chọn xong block trước). Fetch 1 lần tất cả lịch chiếu sắp tới của phim, lọc client-side theo rạp/ngày để mượt. **Sửa bug timezone**: trước dùng `toISOString().split('T')[0]` (sai sang UTC khi máy UTC+7 → label "20" nhưng query date="19") → giờ format local `YYYY-MM-DD` chuẩn. Hiển thị giá tham khảo "từ X đ" trên mỗi suất.
 - [x] `CinemaListPage.jsx` — API danh sách rạp
 - [x] `OrderHistoryPage.jsx` — API lịch sử đặt vé + hủy đơn
 - [x] `ProfilePage.jsx` — API cập nhật profile + đổi mật khẩu
@@ -180,9 +197,10 @@ Tham khảo chi tiết tại `Frontend_API_Integration_Plan.md`.
 
 ### 6.3 Trang Quản Trị
 - [x] `MovieManagePage.jsx` — CRUD phim + Upload **poster** (banner đã tách sang trang riêng)
-- [x] `CinemaManagePage.jsx` — CRUD rạp
-- [x] `RoomManagePage.jsx` — CRUD phòng chiếu + xem sơ đồ ghế
-- [x] `ShowtimeManagePage.jsx` — CRUD lịch chiếu + dropdown phim/rạp/phòng
+- [x] `CinemaManagePage.jsx` — CRUD rạp (Tên / Địa chỉ / Thành phố); cột "Số phòng chiếu" hiển thị `rooms_count` thực tế từ BE (đã bỏ `total_screens` ảo)
+- [x] `RoomManagePage.jsx` — CRUD phòng chiếu + **trình thiết kế sơ đồ ghế**: `capacity` của phòng = sức chứa tối đa cố định (muốn đổi phải bấm Sửa); designer nhập rows × cols + hàng VIP/Đôi, hàng đôi tự sinh `floor(cols/2)` ghế để giữ thẳng hàng (mỗi ghế đôi rộng = 2 thường); validate sức chứa dùng ≤ capacity (1 ghế đôi = 2 chỗ); live preview "X ghế → Y / Z chỗ"; click từng ghế để cycle loại; nút "Tạo lại" / "Xoá hết"; live stats Thường/VIP/Đôi
+- [x] `ShowtimeManagePage.jsx` — CRUD lịch chiếu + dropdown phim/rạp/phòng (đã **bỏ trường "Giá vé mặc định"** — giá vé giờ tra từ trang Bảng giá vé). Sửa bug timezone khi gửi `end_time` (trước dùng `toISOString` lệch UTC → end < start → Laravel bắn `after:start_time`; giờ format local cho cả 2 đầu)
+- [x] `PricingManagePage.jsx` — **Bảng giá vé tập trung**: ma trận 3×3 (loại ghế × loại ngày), inline edit + preview format VND, cảnh báo logic ngược (VIP < Thường, Đôi < VIP), nút "Hoàn tác" / "Lưu bảng giá"; thay thế hoàn toàn cơ chế nhập `base_price` cho từng suất chiếu
 - [x] `OrderManagePage.jsx` — Xem + cập nhật trạng thái đơn hàng
 - [x] `UserManagePage.jsx` — Quản lý người dùng + sửa role
 - [x] `DashboardPage.jsx` — **Tổng quan** (gộp Doanh thu vào): stats cards + lọc khoảng ngày + biểu đồ doanh thu + Top phim doanh thu + Đơn hàng gần đây
@@ -194,11 +212,13 @@ Tham khảo chi tiết tại `Frontend_API_Integration_Plan.md`.
 - [x] Backend: migration `add_promotion_id_to_events_table` (FK nullable, onDelete = setNull)
 - [x] Trang chi tiết sự kiện (customer) hiển thị card mã giảm giá nổi bật + nút sao chép, khi event có đính kèm `promotion_id`
 - [x] Thêm chú thích yêu cầu kích thước ảnh ở tất cả phần upload (Poster phim 600×900px, Banner 1920×600px, Event 800×500px, Combo 500×500px)
+- [x] Nâng giới hạn upload ảnh từ 5MB → **10MB** (BE: `UploadController` `max:10240`, FE: đồng bộ hint "≤ 10MB" ở 4 trang Movie/Banner/Event/Combo) + thông điệp validate tiếng Việt rõ ràng
 
 ### 6.4 Component hỗ trợ
 - [x] `Toast` component (thông báo thành công/lỗi)
 - [x] Axios interceptor — tự gắn Bearer Token, redirect khi 401
 - [x] `HeroCarousel` lấy banner thật từ API `/banners` (thay vì 3 slide placeholder cứng)
+- [x] **`NotificationCenter` + `useNotifyStore`** — hệ thống thông báo toàn cục thay cho `window.alert/confirm`: toast stack góc phải-trên (success/error/info/warning, auto dismiss với progress bar), confirm modal trả Promise<boolean> (Enter/Escape, danger mode); helper `notify.success/error/info/warning` & `confirmDialog({...})` qua `utils/notify.js`
 
 ---
 
@@ -213,6 +233,28 @@ Tham khảo chi tiết tại `Frontend_API_Integration_Plan.md`.
 
 ---
 
+## Phase 8.1: Tổ chức thư mục lưu ảnh upload
+
+Tất cả ảnh do admin upload đều đi qua endpoint chung `POST /api/admin/upload` (xem `UploadController`).
+Tham số `folder` quyết định ảnh được lưu vào thư mục con nào dưới `backend/storage/app/public/`:
+
+| Loại ảnh | Folder | URL truy cập |
+|---|---|---|
+| Poster phim | `movies` | `/storage/movies/{filename}` |
+| Banner trang chủ | `banners` | `/storage/banners/{filename}` |
+| Sự kiện / Ưu đãi | `events` | `/storage/events/{filename}` |
+| Combo bắp nước | `combos` | `/storage/combos/{filename}` |
+| Logo / Ảnh rạp *(dự phòng)* | `cinemas` | `/storage/cinemas/{filename}` |
+| Ảnh khuyến mãi *(dự phòng)* | `promotions` | `/storage/promotions/{filename}` |
+| Avatar người dùng *(dự phòng)* | `avatars` | `/storage/avatars/{filename}` |
+
+- Các thư mục đã được tạo sẵn với `.gitkeep` để git tracking, file ảnh thực tế không commit lên git (`.gitignore` đã cấu hình).
+- Cần chạy `php artisan storage:link` 1 lần để tạo symlink `public/storage` → `storage/app/public`.
+- Validation: file ≤ 5MB, định dạng `jpeg/png/jpg/gif/webp`.
+- Tên file tự động slug từ tên gốc + 8 ký tự random để tránh trùng.
+
+---
+
 ## Phase 8: Hoàn thiện luồng Đặt vé → Thanh toán (mô phỏng)
 
 ### Backend
@@ -224,9 +266,10 @@ Tham khảo chi tiết tại `Frontend_API_Integration_Plan.md`.
 - [x] Mở rộng `useBookingStore` (Zustand + persist) — quản lý showtime, ghế, combo, mã giảm giá, booking ID xuyên suốt 4 bước
 - [x] `bookingApi.confirmPayment(id, { method })`
 - [x] `BookingPage` — click suất chiếu → reset store + chuyển sang `/chon-ghe/:showtimeId` (yêu cầu đăng nhập)
-- [x] `SeatSelectionPage` — load sơ đồ ghế thật từ `GET /showtimes/{id}`, hiển thị trạng thái (available/booked/maintenance), tính giá theo loại ghế (Standard / VIP +30% / Couple +50%)
+- [x] `SeatSelectionPage` — load sơ đồ ghế thật từ `GET /showtimes/{id}`, hiển thị trạng thái (available/booked/maintenance), **giá lấy trực tiếp từ BE qua bảng `pricings`** (mỗi `seat.price` server-side resolve theo loại ghế × loại ngày của suất chiếu), legend hiển thị giá tham chiếu Standard/VIP/Couple
 - [x] `ConcessionPage` — load combo thật từ `GET /combos`, đồng bộ store
-- [x] `PaymentPage` — hiển thị tóm tắt thật, input mã giảm giá + `promotionApi.check`, chọn phương thức (Zalopay / VNPAY / MoMo), gọi `POST /bookings` để tạo đơn rồi chuyển sang Mock Payment
-- [x] `MockPaymentPage` (`/mock-payment/:bookingId`) — đếm ngược 5 phút, hết giờ tự hủy đơn, nút "Thành công" gọi `confirmPayment`, nút "Hủy" gọi `cancel`
+- [x] `PaymentPage` — hiển thị tóm tắt thật, input mã giảm giá + `promotionApi.check`, chọn phương thức (Zalopay / VNPAY / MoMo), gọi `POST /bookings` để tạo đơn rồi chuyển sang Mock Payment. Thay `alert` bằng `notify.error + getErrorMessage`
+- [x] `MockPaymentPage` (`/mock-payment/:bookingId`) — đếm ngược 5 phút, hết giờ tự hủy đơn, nút "Thành công" gọi `confirmPayment`, nút "Hủy" gọi `cancel`. Thay `alert/window.confirm` bằng `notify + confirmDialog` global
+- [x] `OrderHistoryPage` + `TicketDetailModal` — thay `alert/window.confirm` bằng `notify + confirmDialog` global
 - [x] `BookingSuccessPage` (`/dat-ve-thanh-cong/:bookingId`) — trang xác nhận đặt vé thành công, hiển thị mã đơn, phim, rạp, ghế, combo, mã giao dịch
 - [x] Cập nhật `customerRoutes.jsx` — chuẩn hoá `/dat-ve/:id`, `/chon-ghe/:showtimeId`, `/bap-nuoc`, `/thanh-toan`, `/mock-payment/:bookingId`, `/dat-ve-thanh-cong/:bookingId`

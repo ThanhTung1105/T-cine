@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { MdHome, MdChevronRight, MdLocalPlay, MdStar, MdStarBorder } from 'react-icons/md';
 import { FaHandPointRight } from 'react-icons/fa';
 import movieApi from '../../../api/movieApi';
+import { toYouTubeEmbedUrl } from '../../../utils/youtube';
 import styles from './MovieDetailPage.module.scss';
 
 const STORAGE_URL = import.meta.env.VITE_STORAGE_URL || 'http://localhost:8000/storage';
@@ -107,11 +108,27 @@ const MovieDetailPage = () => {
                 <div className={styles.detailText}><p>{movie.description || 'Chưa có mô tả.'}</p></div>
               ) : (
                 <div className={styles.trailerVideo}>
-                  {movie.trailer_url ? (
-                    <iframe width="100%" height="500" src={movie.trailer_url} title="Trailer" frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen></iframe>
-                  ) : (
-                    <p style={{ textAlign: 'center', color: '#aaa', padding: '60px' }}>Chưa có trailer.</p>
-                  )}
+                  {(() => {
+                    const embedUrl = toYouTubeEmbedUrl(movie.trailer_url);
+                    if (!embedUrl) {
+                      return (
+                        <p style={{ textAlign: 'center', color: '#aaa', padding: '60px' }}>
+                          {movie.trailer_url ? 'Link trailer không hợp lệ.' : 'Chưa có trailer.'}
+                        </p>
+                      );
+                    }
+                    return (
+                      <iframe
+                        width="100%"
+                        height="500"
+                        src={embedUrl}
+                        title="Trailer"
+                        frameBorder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      />
+                    );
+                  })()}
                 </div>
               )}
             </div>

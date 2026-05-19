@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { MdHome, MdChevronRight, MdLocalPlay, MdPlayArrow, MdClose, MdStar } from 'react-icons/md';
 import movieApi from '../../../api/movieApi';
+import { toYouTubeEmbedUrl } from '../../../utils/youtube';
 import styles from './MovieListPage.module.scss';
 
 const STORAGE_URL = import.meta.env.VITE_STORAGE_URL || 'http://localhost:8000/storage';
@@ -84,8 +85,11 @@ const MovieListPage = () => {
                     )}
                     
                     <div className={styles.hoverOverlay}>
-                      {movie.trailer_url && (
-                        <button className={styles.trailerBtn} onClick={() => setTrailerUrl(movie.trailer_url)}>
+                      {toYouTubeEmbedUrl(movie.trailer_url) && (
+                        <button
+                          className={styles.trailerBtn}
+                          onClick={() => setTrailerUrl(toYouTubeEmbedUrl(movie.trailer_url))}
+                        >
                           <MdPlayArrow className={styles.playIcon} />
                           <span>TRAILER</span>
                         </button>

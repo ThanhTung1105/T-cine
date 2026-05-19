@@ -294,7 +294,7 @@ const BannerManagePage = () => {
                   </div>
                   <small className={styles.uploadHint}>
                     ⚠️ <strong>Yêu cầu:</strong> Tỉ lệ <strong>ngang 16:5</strong> (khuyến nghị <strong>1920×600px</strong>),
-                    định dạng JPG/PNG/WEBP, dung lượng ≤ 2MB. Tránh đặt chữ quá sát viền vì có thể bị che bởi nút điều hướng.
+                    định dạng JPG/PNG/WEBP, dung lượng ≤ 10MB. Tránh đặt chữ quá sát viền vì có thể bị che bởi nút điều hướng.
                   </small>
                 </div>
 

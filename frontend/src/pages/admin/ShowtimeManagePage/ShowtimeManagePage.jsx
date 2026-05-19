@@ -3,6 +3,8 @@ import { MdAdd, MdEdit, MdDelete, MdClose } from 'react-icons/md';
 import axiosClient from '../../../api/axiosClient';
 import movieApi from '../../../api/movieApi';
 import cinemaApi from '../../../api/cinemaApi';
+import { getErrorMessage } from '../../../utils/helpers';
+import { notify, confirmDialog } from '../../../utils/notify';
 import styles from './ShowtimeManagePage.module.scss';
 
 const ShowtimeManagePage = () => {
@@ -15,7 +17,7 @@ const ShowtimeManagePage = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
-    movie_id: '', room_id: '', cinema_id: '', start_date: '', start_time: '', duration: 120, base_price: ''
+    movie_id: '', room_id: '', cinema_id: '', start_date: '', start_time: '', duration: 120,
   });
 
   const fetchShowtimes = async () => {
@@ -54,7 +56,7 @@ const ShowtimeManagePage = () => {
 
   const handleOpenModal = () => {
     setEditingSt(null);
-    setFormData({ movie_id: '', room_id: '', cinema_id: '', start_date: '', start_time: '', duration: 120, base_price: '' });
+    setFormData({ movie_id: '', room_id: '', cinema_id: '', start_date: '', start_time: '', duration: 120 });
     setRooms([]);
     setIsModalOpen(true);
   };
@@ -70,7 +72,6 @@ const ShowtimeManagePage = () => {
       start_date: startDt.toISOString().split('T')[0],
       start_time: startDt.toTimeString().slice(0, 5),
       duration: st.movie?.duration || 120,
-      base_price: st.base_price || '',
     });
     if (cinemaId) handleCinemaChange(cinemaId);
     setIsModalOpen(true);
@@ -79,35 +80,67 @@ const ShowtimeManagePage = () => {
   const handleCloseModal = () => { setIsModalOpen(false); setEditingSt(null); };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Bạn có chắc muốn xóa lịch chiếu này?')) return;
-    try { await axiosClient.delete(`/admin/showtimes/${id}`); fetchShowtimes(); }
-    catch (e) { alert('Xóa thất bại!'); }
+    const ok = await confirmDialog({
+      title: 'Xóa lịch chiếu?',
+      message: 'Lịch chiếu sẽ bị xóa. Các đơn đặt vé đã tạo cho lịch này có thể bị ảnh hưởng.',
+      confirmText: 'Xóa',
+      danger: true,
+    });
+    if (!ok) return;
+    try {
+      await axiosClient.delete(`/admin/showtimes/${id}`);
+      notify.success('Đã xóa lịch chiếu');
+      fetchShowtimes();
+    } catch (e) {
+      console.error('[ShowtimeManagePage] delete error:', e);
+      notify.error(getErrorMessage(e), 'Xóa thất bại');
+    }
   };
 
   const handleSave = async () => {
-    if (!formData.movie_id || !formData.room_id || !formData.start_date || !formData.start_time || !formData.base_price) {
-      alert('Vui lòng điền đầy đủ thông tin!'); return;
+    if (!formData.movie_id || !formData.room_id || !formData.start_date || !formData.start_time) {
+      notify.warning('Vui lòng điền đầy đủ thông tin!');
+      return;
     }
     setSaving(true);
     try {
-      const startDateTime = `${formData.start_date} ${formData.start_time}:00`;
-      const endDate = new Date(`${formData.start_date}T${formData.start_time}`);
-      endDate.setMinutes(endDate.getMinutes() + parseInt(formData.duration || 120));
-      const endDateTime = endDate.toISOString().replace('T', ' ').slice(0, 19);
+      // Tạo Date trong local time để tránh lệch UTC khi serialize end_time
+      const startDate = new Date(`${formData.start_date}T${formData.start_time}:00`);
+      if (isNaN(startDate.getTime())) {
+        notify.warning('Ngày/giờ chiếu không hợp lệ.');
+        setSaving(false);
+        return;
+      }
+      const endDate = new Date(startDate.getTime() + parseInt(formData.duration || 120) * 60 * 1000);
+
+      // Format "YYYY-MM-DD HH:mm:ss" theo local time (không dùng toISOString để khỏi đổi sang UTC)
+      const pad = (n) => String(n).padStart(2, '0');
+      const fmt = (d) =>
+        `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ` +
+        `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
 
       const payload = {
         movie_id: parseInt(formData.movie_id),
         room_id: parseInt(formData.room_id),
-        start_time: startDateTime,
-        end_time: endDateTime,
-        base_price: parseFloat(formData.base_price),
+        start_time: fmt(startDate),
+        end_time:   fmt(endDate),
       };
 
-      if (editingSt) { await axiosClient.put(`/admin/showtimes/${editingSt.id}`, payload); }
-      else { await axiosClient.post('/admin/showtimes', payload); }
-      handleCloseModal(); fetchShowtimes();
-    } catch (e) { alert('Lưu thất bại! ' + (e.response?.data?.message || '')); }
-    finally { setSaving(false); }
+      if (editingSt) {
+        await axiosClient.put(`/admin/showtimes/${editingSt.id}`, payload);
+        notify.success('Đã cập nhật lịch chiếu');
+      } else {
+        await axiosClient.post('/admin/showtimes', payload);
+        notify.success('Đã thêm lịch chiếu');
+      }
+      handleCloseModal();
+      fetchShowtimes();
+    } catch (e) {
+      console.error('[ShowtimeManagePage] save error:', e);
+      notify.error(getErrorMessage(e), 'Lưu thất bại');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const formatDateTime = (dt) => {
@@ -126,17 +159,16 @@ const ShowtimeManagePage = () => {
       <div className={styles.tableContainer}>
         {loading ? <p style={{ textAlign: 'center', padding: '40px', color: '#aaa' }}>Đang tải...</p> : (
           <table className={styles.table}>
-            <thead><tr><th>Phim</th><th>Rạp</th><th>Phòng chiếu</th><th>Thời gian chiếu</th><th>Giá vé</th><th>Thao tác</th></tr></thead>
+            <thead><tr><th>Phim</th><th>Rạp</th><th>Phòng chiếu</th><th>Thời gian chiếu</th><th>Thao tác</th></tr></thead>
             <tbody>
               {showtimes.length === 0 ? (
-                <tr><td colSpan="6" style={{ textAlign: 'center', padding: '30px', color: '#aaa' }}>Chưa có lịch chiếu</td></tr>
+                <tr><td colSpan="5" style={{ textAlign: 'center', padding: '30px', color: '#aaa' }}>Chưa có lịch chiếu</td></tr>
               ) : showtimes.map(st => (
                 <tr key={st.id}>
                   <td><strong>{st.movie?.title || 'N/A'}</strong></td>
                   <td>{st.room?.cinema?.name || 'N/A'}</td>
                   <td>{st.room?.name || 'N/A'}</td>
                   <td><span className={styles.timeTag}>{formatDateTime(st.start_time)}</span></td>
-                  <td>{Number(st.base_price).toLocaleString('vi-VN')} VNĐ</td>
                   <td>
                     <div className={styles.actionBtns}>
                       <button className={styles.editBtn} title="Sửa" onClick={() => handleEdit(st)}><MdEdit /></button>
@@ -186,11 +218,9 @@ const ShowtimeManagePage = () => {
                   <div className={styles.formGroup}><label>Ngày chiếu *</label><input type="date" name="start_date" value={formData.start_date} onChange={handleChange} /></div>
                   <div className={styles.formGroup}><label>Giờ chiếu *</label><input type="time" name="start_time" value={formData.start_time} onChange={handleChange} /></div>
                 </div>
-                <div className={styles.formGroup}>
-                  <label>Giá vé mặc định (VNĐ) *</label>
-                  <input type="number" name="base_price" value={formData.base_price} onChange={handleChange} placeholder="90000" />
-                  <small className={styles.helperText}>Ghế VIP +30%, Couple +50% tự tính.</small>
-                </div>
+                <small className={styles.helperText}>
+                  Giá vé được lấy tự động từ <strong>Bảng giá vé</strong> theo loại ghế và ngày chiếu (T2-T6 ngày thường / T7-CN cuối tuần / Lễ). Sửa giá ở trang <strong>"Bảng giá vé"</strong>.
+                </small>
               </form>
             </div>
             <div className={styles.modalFooter}>

@@ -9,6 +9,7 @@ import BannerManagePage from '../pages/admin/BannerManagePage/BannerManagePage';
 import EventManagePage from '../pages/admin/EventManagePage/EventManagePage';
 import ComboManagePage from '../pages/admin/ComboManagePage/ComboManagePage';
 import PromotionManagePage from '../pages/admin/PromotionManagePage/PromotionManagePage';
+import PricingManagePage from '../pages/admin/PricingManagePage/PricingManagePage';
 
 const adminRoutes = [
   { index: true, element: <DashboardPage /> },
@@ -16,6 +17,7 @@ const adminRoutes = [
   { path: 'rap', element: <CinemaManagePage /> },
   { path: 'phong-chieu', element: <RoomManagePage /> },
   { path: 'lich-chieu', element: <ShowtimeManagePage /> },
+  { path: 'gia-ve', element: <PricingManagePage /> },
   { path: 'don-hang', element: <OrderManagePage /> },
   { path: 'nguoi-dung', element: <UserManagePage /> },
   { path: 'banner', element: <BannerManagePage /> },

@@ -462,7 +462,7 @@ const EventManagePage = () => {
                   </div>
                   <small className={styles.hint}>
                     ⚠️ <strong>Yêu cầu:</strong> Tỉ lệ <strong>16:10</strong> (khuyến nghị <strong>800×500px</strong>),
-                    định dạng JPG/PNG/WEBP, dung lượng ≤ 2MB.
+                    định dạng JPG/PNG/WEBP, dung lượng ≤ 10MB.
                   </small>
                 </div>
               </form>

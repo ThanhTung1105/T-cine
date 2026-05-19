@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { MdAdd, MdEdit, MdDelete, MdClose } from 'react-icons/md';
 import cinemaApi from '../../../api/cinemaApi';
+import { getErrorMessage } from '../../../utils/helpers';
+import { notify, confirmDialog } from '../../../utils/notify';
 import styles from './CinemaManagePage.module.scss';
 
 const CinemaManagePage = () => {
@@ -9,15 +11,17 @@ const CinemaManagePage = () => {
   const [cinemas, setCinemas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [formData, setFormData] = useState({ name: '', address: '', city: '', total_screens: '' });
+  const [formData, setFormData] = useState({ name: '', address: '', city: '' });
 
   const fetchCinemas = async () => {
     setLoading(true);
     try {
       const res = await cinemaApi.getAll();
       setCinemas(res.data || []);
-    } catch (e) { console.error(e); }
-    finally { setLoading(false); }
+    } catch (e) {
+      console.error('[CinemaManagePage] fetchCinemas error:', e);
+      notify.error(getErrorMessage(e), 'Tải danh sách rạp thất bại');
+    } finally { setLoading(false); }
   };
 
   useEffect(() => { fetchCinemas(); }, []);
@@ -26,33 +30,63 @@ const CinemaManagePage = () => {
 
   const handleOpenModal = () => {
     setEditingCinema(null);
-    setFormData({ name: '', address: '', city: '', total_screens: '' });
+    setFormData({ name: '', address: '', city: '' });
     setIsModalOpen(true);
   };
 
   const handleEdit = (cinema) => {
     setEditingCinema(cinema);
-    setFormData({ name: cinema.name, address: cinema.address, city: cinema.city || '', total_screens: cinema.total_screens || '' });
+    setFormData({ name: cinema.name, address: cinema.address, city: cinema.city || '' });
     setIsModalOpen(true);
   };
 
   const handleCloseModal = () => { setIsModalOpen(false); setEditingCinema(null); };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Bạn có chắc muốn xóa rạp này?')) return;
-    try { await cinemaApi.delete(id); fetchCinemas(); } catch (e) { alert('Xóa rạp thất bại!'); }
+    const ok = await confirmDialog({
+      title: 'Xóa rạp này?',
+      message: 'Toàn bộ phòng chiếu & ghế trong rạp cũng có thể bị ảnh hưởng. Hành động không thể hoàn tác.',
+      confirmText: 'Xóa',
+      danger: true,
+    });
+    if (!ok) return;
+    try {
+      await cinemaApi.delete(id);
+      notify.success('Đã xóa rạp');
+      fetchCinemas();
+    } catch (e) {
+      console.error('[CinemaManagePage] delete error:', e);
+      notify.error(getErrorMessage(e), 'Xóa rạp thất bại');
+    }
   };
 
   const handleSave = async () => {
-    if (!formData.name || !formData.address) { alert('Vui lòng nhập tên và địa chỉ rạp!'); return; }
+    if (!formData.name?.trim() || !formData.address?.trim() || !formData.city?.trim()) {
+      notify.warning('Vui lòng nhập đầy đủ Tên rạp, Địa chỉ và Thành phố!');
+      return;
+    }
     setSaving(true);
     try {
-      const payload = { ...formData, total_screens: formData.total_screens ? parseInt(formData.total_screens) : null };
-      if (editingCinema) { await cinemaApi.update(editingCinema.id, payload); }
-      else { await cinemaApi.create(payload); }
-      handleCloseModal(); fetchCinemas();
-    } catch (e) { alert('Lưu rạp thất bại!'); }
-    finally { setSaving(false); }
+      const payload = {
+        name: formData.name.trim(),
+        address: formData.address.trim(),
+        city: formData.city.trim(),
+      };
+      if (editingCinema) {
+        await cinemaApi.update(editingCinema.id, payload);
+        notify.success('Đã cập nhật rạp');
+      } else {
+        await cinemaApi.create(payload);
+        notify.success('Đã thêm rạp mới');
+      }
+      handleCloseModal();
+      fetchCinemas();
+    } catch (e) {
+      console.error('[CinemaManagePage] save error:', e);
+      notify.error(getErrorMessage(e), 'Lưu rạp thất bại');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -74,7 +108,7 @@ const CinemaManagePage = () => {
                   <td><strong>{cinema.name}</strong></td>
                   <td>{cinema.address}</td>
                   <td>{cinema.city || '-'}</td>
-                  <td>{cinema.rooms_count ?? cinema.total_screens ?? 0} phòng</td>
+                  <td>{cinema.rooms_count ?? 0} phòng</td>
                   <td>
                     <div className={styles.actionBtns}>
                       <button className={styles.editBtn} title="Sửa" onClick={() => handleEdit(cinema)}><MdEdit /></button>
@@ -99,10 +133,7 @@ const CinemaManagePage = () => {
               <form className={styles.form} onSubmit={e => e.preventDefault()}>
                 <div className={styles.formGroup}><label>Tên Rạp *</label><input type="text" name="name" value={formData.name} onChange={handleChange} placeholder="VD: T-CINE Landmark 81" /></div>
                 <div className={styles.formGroup}><label>Địa chỉ *</label><textarea rows="2" name="address" value={formData.address} onChange={handleChange} placeholder="Nhập địa chỉ đầy đủ"></textarea></div>
-                <div className={styles.formRow}>
-                  <div className={styles.formGroup}><label>Thành phố</label><input type="text" name="city" value={formData.city} onChange={handleChange} placeholder="VD: Hà Nội" /></div>
-                  <div className={styles.formGroup}><label>Tổng số phòng chiếu</label><input type="number" name="total_screens" value={formData.total_screens} onChange={handleChange} placeholder="5" /></div>
-                </div>
+                <div className={styles.formGroup}><label>Thành phố *</label><input type="text" name="city" value={formData.city} onChange={handleChange} placeholder="VD: Hà Nội" /></div>
               </form>
             </div>
             <div className={styles.modalFooter}>

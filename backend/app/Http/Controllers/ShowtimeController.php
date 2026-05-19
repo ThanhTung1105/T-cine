@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Showtime;
+use App\Models\Pricing;
 use Illuminate\Http\Request;
 
 class ShowtimeController extends Controller
@@ -33,11 +34,12 @@ class ShowtimeController extends Controller
                 'cinema' => $cinema,
                 'showtimes' => $showtimes->map(function ($st) {
                     return [
-                        'id' => $st->id,
+                        'id'         => $st->id,
                         'start_time' => $st->start_time,
-                        'end_time' => $st->end_time,
-                        'base_price' => $st->base_price,
-                        'room' => $st->room->only(['id', 'name']),
+                        'end_time'   => $st->end_time,
+                        // Giá tham khảo cho FE hiển thị "từ X VND" — luôn dùng giá ghế thường
+                        'from_price' => Pricing::resolve('normal', $st->start_time),
+                        'room'       => $st->room->only(['id', 'name']),
                     ];
                 })->values(),
             ];
@@ -65,25 +67,38 @@ class ShowtimeController extends Controller
             ->pluck('seat_id')
             ->toArray();
 
-        // Gắn trạng thái cho từng ghế
-        $seats = $showtime->room->seats->map(function ($seat) use ($bookedSeatIds) {
+        // Tính day_type 1 lần, lookup giá theo loại ghế từ bảng pricings
+        $dayType = Pricing::classifyDayType($showtime->start_time);
+        $priceByType = [
+            'normal' => Pricing::resolve('normal', $showtime->start_time),
+            'vip'    => Pricing::resolve('vip',    $showtime->start_time),
+            'couple' => Pricing::resolve('couple', $showtime->start_time),
+        ];
+
+        // Gắn trạng thái + giá cho từng ghế
+        $seats = $showtime->room->seats->map(function ($seat) use ($bookedSeatIds, $priceByType) {
             return [
-                'id' => $seat->id,
-                'row' => $seat->row,
+                'id'         => $seat->id,
+                'row'        => $seat->row,
                 'column_num' => $seat->column_num,
-                'type' => $seat->type,
-                'status' => $seat->status,
-                'is_booked' => in_array($seat->id, $bookedSeatIds),
+                'type'       => $seat->type,
+                'status'     => $seat->status,
+                'is_booked'  => in_array($seat->id, $bookedSeatIds),
+                'price'      => $priceByType[$seat->type] ?? 0,
             ];
         });
 
         return response()->json([
             'data' => [
-                'showtime' => $showtime->only(['id', 'start_time', 'end_time', 'base_price']),
-                'movie' => $showtime->movie,
-                'room' => $showtime->room->only(['id', 'name', 'capacity']),
-                'cinema' => $showtime->room->cinema,
-                'seats' => $seats,
+                'showtime' => array_merge(
+                    $showtime->only(['id', 'start_time', 'end_time']),
+                    ['day_type' => $dayType],
+                ),
+                'movie'        => $showtime->movie,
+                'room'         => $showtime->room->only(['id', 'name', 'capacity']),
+                'cinema'       => $showtime->room->cinema,
+                'seats'        => $seats,
+                'prices'       => $priceByType,
             ],
         ]);
     }

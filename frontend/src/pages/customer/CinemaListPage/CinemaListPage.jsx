@@ -45,7 +45,7 @@ const CinemaListPage = () => {
                   <p style={{ color: '#aaa', margin: '0 0 4px', fontSize: 14 }}>{cinema.address}</p>
                   {cinema.city && <p style={{ color: '#888', margin: 0, fontSize: 13 }}>🏙️ {cinema.city}</p>}
                   <p style={{ color: '#888', margin: '4px 0 0', fontSize: 13 }}>
-                    📽️ {cinema.rooms_count ?? cinema.total_screens ?? '?'} phòng chiếu
+                    📽️ {cinema.rooms_count ?? 0} phòng chiếu
                   </p>
                 </div>
               </div>

@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import bookingApi from '../../../api/bookingApi';
 import useBookingStore from '../../../store/useBookingStore';
+import { notify, confirmDialog } from '../../../utils/notify';
+import { getErrorMessage } from '../../../utils/helpers';
 import styles from './MockPaymentPage.module.scss';
 
 const METHOD_CONFIG = {
@@ -59,13 +61,13 @@ const MockPaymentPage = () => {
           return;
         }
         if (b?.status === 'cancelled') {
-          alert('Đơn này đã bị hủy.');
+          notify.warning('Đơn này đã bị hủy.');
           navigate('/');
           return;
         }
       } catch (e) {
         console.error(e);
-        alert('Không tìm thấy đơn đặt vé.');
+        notify.error(getErrorMessage(e, 'Không tìm thấy đơn đặt vé.'));
         navigate('/');
       } finally {
         setLoading(false);
@@ -101,8 +103,7 @@ const MockPaymentPage = () => {
       resetBooking();
       navigate(`/dat-ve-thanh-cong/${bookingId}`, { replace: true });
     } catch (e) {
-      const msg = e.response?.data?.message || 'Xác nhận thanh toán thất bại.';
-      alert(msg);
+      notify.error(getErrorMessage(e, 'Xác nhận thanh toán thất bại.'));
     } finally {
       setProcessing(false);
     }
@@ -110,14 +111,23 @@ const MockPaymentPage = () => {
 
   const handleCancel = async (auto = false) => {
     if (processing) return;
-    if (!auto && !window.confirm('Bạn có chắc muốn hủy giao dịch này?')) return;
+    if (!auto) {
+      const ok = await confirmDialog({
+        title: 'Hủy giao dịch?',
+        message: 'Bạn có chắc muốn hủy giao dịch này? Ghế đã chọn sẽ được mở lại cho khách khác.',
+        confirmText: 'Hủy giao dịch',
+        cancelText: 'Tiếp tục thanh toán',
+        danger: true,
+      });
+      if (!ok) return;
+    }
     setProcessing(true);
     try {
       await bookingApi.cancel(bookingId);
     } catch (e) {
       // ignore
     } finally {
-      if (auto) alert('Thời gian thanh toán đã hết. Đơn đặt vé đã bị hủy.');
+      if (auto) notify.warning('Thời gian thanh toán đã hết. Đơn đặt vé đã bị hủy.');
       resetBooking();
       navigate('/');
     }

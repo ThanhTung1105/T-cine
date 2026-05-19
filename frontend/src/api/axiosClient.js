@@ -6,7 +6,9 @@ const axiosClient = axios.create({
     'Content-Type': 'application/json',
     'Accept': 'application/json',
   },
-  timeout: 15000,
+  // Tăng timeout lên 60s vì php artisan serve là single-threaded,
+  // request có thể bị queue sau những request chậm khác (load nhiều ảnh, v.v.)
+  timeout: 60000,
 });
 
 // Request interceptor — tự động gắn token vào header

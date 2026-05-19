@@ -35,20 +35,19 @@ class ShowtimeController extends Controller
      */
     public function store(Request $request)
     {
-        $request->validate([
-            'movie_id' => 'required|exists:movies,id',
-            'room_id' => 'required|exists:rooms,id',
+        $data = $request->validate([
+            'movie_id'   => 'required|exists:movies,id',
+            'room_id'    => 'required|exists:rooms,id',
             'start_time' => 'required|date',
-            'end_time' => 'required|date|after:start_time',
-            'base_price' => 'required|numeric|min:0',
+            'end_time'   => 'required|date|after:start_time',
         ]);
 
-        $showtime = Showtime::create($request->all());
+        $showtime = Showtime::create($data);
         $showtime->load(['movie', 'room.cinema']);
 
         return response()->json([
             'message' => 'Thêm suất chiếu thành công',
-            'data' => $showtime,
+            'data'    => $showtime,
         ], 201);
     }
 
@@ -60,17 +59,18 @@ class ShowtimeController extends Controller
     {
         $showtime = Showtime::findOrFail($id);
 
-        $request->validate([
+        $data = $request->validate([
+            'movie_id'   => 'sometimes|exists:movies,id',
+            'room_id'    => 'sometimes|exists:rooms,id',
             'start_time' => 'sometimes|date',
-            'end_time' => 'sometimes|date|after:start_time',
-            'base_price' => 'sometimes|numeric|min:0',
+            'end_time'   => 'sometimes|date|after:start_time',
         ]);
 
-        $showtime->update($request->all());
+        $showtime->update($data);
 
         return response()->json([
             'message' => 'Cập nhật suất chiếu thành công',
-            'data' => $showtime->fresh()->load(['movie', 'room.cinema']),
+            'data'    => $showtime->fresh()->load(['movie', 'room.cinema']),
         ]);
     }
 

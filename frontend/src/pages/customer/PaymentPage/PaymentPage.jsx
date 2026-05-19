@@ -3,6 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import bookingApi from '../../../api/bookingApi';
 import promotionApi from '../../../api/promotionApi';
 import useBookingStore from '../../../store/useBookingStore';
+import { notify } from '../../../utils/notify';
+import { getErrorMessage } from '../../../utils/helpers';
 import styles from './PaymentPage.module.scss';
 
 const METHODS = [
@@ -114,8 +116,7 @@ const PaymentPage = () => {
       setCurrentBookingId(booking.id);
       navigate(`/mock-payment/${booking.id}?method=${method}`);
     } catch (e) {
-      const msg = e.response?.data?.message || 'Tạo đơn đặt vé thất bại. Vui lòng thử lại.';
-      alert(msg);
+      notify.error(getErrorMessage(e, 'Tạo đơn đặt vé thất bại. Vui lòng thử lại.'), 'Đặt vé thất bại');
       // Nếu lỗi do ghế đã bị đặt -> đẩy về chọn ghế lại
       if (e.response?.data?.conflict_seats) {
         navigate(`/chon-ghe/${showtime.id}`);

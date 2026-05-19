@@ -11,7 +11,7 @@ const useBookingStore = create(
   persist(
     (set, get) => ({
       // ===== Showtime + Movie + Cinema + Room (load 1 lần ở SeatSelectionPage) =====
-      showtime: null, // { id, start_time, end_time, base_price }
+      showtime: null, // { id, start_time, end_time, day_type }
       movie: null,
       cinema: null,
       room: null,
@@ -40,11 +40,8 @@ const useBookingStore = create(
         if (exists) {
           set({ selectedSeats: selectedSeats.filter((s) => s.id !== seat.id) });
         } else {
-          // Tính giá dựa trên base_price + loại ghế
-          let price = Number(showtime.base_price || 0);
-          if (seat.type === 'vip') price = Math.round(price * 1.3);
-          else if (seat.type === 'couple') price = Math.round(price * 1.5);
-
+          // Giá được lookup ở backend dựa trên bảng pricings (seat_type × day_type)
+          // và trả về kèm mỗi seat ở GET /api/showtimes/{id}. FE tin server-side.
           set({
             selectedSeats: [
               ...selectedSeats,
@@ -54,7 +51,7 @@ const useBookingStore = create(
                 column_num: seat.column_num,
                 type: seat.type,
                 label: `${seat.row}${seat.column_num}`,
-                price,
+                price: Number(seat.price || 0),
               },
             ],
           });

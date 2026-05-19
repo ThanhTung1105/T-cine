@@ -285,17 +285,71 @@
   border: 1px dashed #cbd5e1;
   border-radius: 8px;
   padding: 16px;
-  
+  margin-bottom: 20px;
+
   h4 {
     margin: 0 0 4px 0;
     color: #334155;
     font-size: 15px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
   }
-  
+
   p {
     margin: 0 0 16px 0;
     color: #64748b;
     font-size: 13px;
+  }
+}
+
+.seatActions {
+  display: flex;
+  gap: 10px;
+  margin-top: 14px;
+  flex-wrap: wrap;
+}
+
+.generateBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  background-color: $color-primary;
+  border: 1px solid $color-primary;
+  border-radius: 6px;
+  color: #fff;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover:not(:disabled) {
+    background-color: darken($color-primary, 8%);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.clearSeatsBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 18px;
+  background-color: #fff;
+  border: 1px solid #ef4444;
+  border-radius: 6px;
+  color: #ef4444;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background-color: #fef2f2;
   }
 }
 
@@ -339,7 +393,7 @@
 
 /* === SEAT CONFIG MODAL === */
 .seatModal {
-  max-width: 800px;
+  max-width: 980px;
 }
 
 .seatGuide {

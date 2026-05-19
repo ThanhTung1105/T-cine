@@ -12,6 +12,7 @@ import {
   MdCampaign,
   MdFastfood,
   MdLocalOffer,
+  MdAttachMoney,
   MdMenu,
   MdChevronLeft
 } from 'react-icons/md';
@@ -24,6 +25,7 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
     { path: '/admin/rap', name: 'Quản lý Rạp', icon: <MdTheaters /> },
     { path: '/admin/phong-chieu', name: 'Phòng chiếu', icon: <MdEventSeat /> },
     { path: '/admin/lich-chieu', name: 'Lịch chiếu', icon: <MdCalendarToday /> },
+    { path: '/admin/gia-ve', name: 'Bảng giá vé', icon: <MdAttachMoney /> },
     { path: '/admin/don-hang', name: 'Đơn hàng', icon: <MdReceipt /> },
     { path: '/admin/nguoi-dung', name: 'Người dùng', icon: <MdPeople /> },
     { path: '/admin/banner', name: 'Banner trang chủ', icon: <MdImage /> },

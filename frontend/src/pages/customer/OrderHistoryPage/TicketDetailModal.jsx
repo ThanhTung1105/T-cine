@@ -10,6 +10,7 @@ import {
   MdFastfood,
   MdReceiptLong,
 } from 'react-icons/md';
+import { confirmDialog } from '../../../utils/notify';
 import styles from './TicketDetailModal.module.scss';
 
 const STORAGE_URL = import.meta.env.VITE_STORAGE_URL || 'http://localhost:8000/storage';
@@ -67,7 +68,14 @@ const TicketDetailModal = ({ booking, onClose, onCancel }) => {
 
   const handleCancelClick = async () => {
     if (confirming) return;
-    if (!window.confirm('Bạn có chắc muốn hủy đơn này?')) return;
+    const ok = await confirmDialog({
+      title: 'Hủy đơn đặt vé?',
+      message: 'Đơn này sẽ bị hủy và các ghế đã chọn sẽ được mở lại cho khách khác.',
+      confirmText: 'Hủy đơn',
+      cancelText: 'Giữ lại',
+      danger: true,
+    });
+    if (!ok) return;
     setConfirming(true);
     try {
       await onCancel?.(booking.id);

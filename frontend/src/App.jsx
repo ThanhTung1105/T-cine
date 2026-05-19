@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import router from './routes';
+import NotificationCenter from './components/NotificationCenter/NotificationCenter';
 
 // Cấu hình React Query
 const queryClient = new QueryClient({
@@ -28,6 +29,7 @@ function App() {
         pauseOnHover
         theme="dark"
       />
+      <NotificationCenter />
     </QueryClientProvider>
   );
 }
