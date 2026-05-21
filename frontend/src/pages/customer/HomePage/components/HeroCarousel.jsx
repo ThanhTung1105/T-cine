@@ -79,9 +79,15 @@ const HeroCarousel = () => {
         loop={banners.length > 1}
         className={styles.swiperContainer}
       >
-        {!loading && banners.length > 0
-          ? banners.map(renderBannerSlide)
-          : renderPlaceholders()}
+        {loading ? (
+          <SwiperSlide>
+            <div className={styles.skeleton} />
+          </SwiperSlide>
+        ) : banners.length > 0 ? (
+          banners.map(renderBannerSlide)
+        ) : (
+          renderPlaceholders()
+        )}
       </Swiper>
     </div>
   );

@@ -202,7 +202,7 @@ const MockPaymentPage = () => {
             onClick={handleSuccess}
             disabled={processing}
           >
-            {processing ? 'Đang xử lý...' : 'Mô phỏng Thanh toán Thành công'}
+            {processing ? 'Đang xử lý...' : 'Thanh toán'}
           </button>
           <button
             className={styles.cancelBtn}

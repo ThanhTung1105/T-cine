@@ -27,15 +27,23 @@ const customerRoutes = [
   { path: 'tin-moi-va-uu-dai/:id', element: <EventDetailPage /> },
   { path: 'cong-dong', element: <CommunityPage /> },
 
-  // ===== Customer-only routes (cần đăng nhập, admin không vào được) =====
+  // ===== Luồng đặt vé — chỉ cần đăng nhập, KHÔNG kiểm tra role =====
+  // (để cả admin lẫn customer đều có thể đặt vé mà không bị redirect)
   {
-    element: <ProtectedRoute requiredRole="customer" />,
+    element: <ProtectedRoute />,
     children: [
       { path: 'chon-ghe/:showtimeId', element: <SeatSelectionPage /> },
       { path: 'bap-nuoc', element: <ConcessionPage /> },
       { path: 'thanh-toan', element: <PaymentPage /> },
       { path: 'mock-payment/:bookingId', element: <MockPaymentPage /> },
       { path: 'dat-ve-thanh-cong/:bookingId', element: <BookingSuccessPage /> },
+    ],
+  },
+
+  // ===== Customer-only routes (cần đăng nhập + role customer) =====
+  {
+    element: <ProtectedRoute requiredRole="customer" />,
+    children: [
       { path: 'lich-su-dat-ve', element: <OrderHistoryPage /> },
       { path: 'thanh-vien', element: <ProfilePage /> },
       // Alias cũ → vẫn vào ProfilePage để không vỡ link cũ

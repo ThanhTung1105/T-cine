@@ -27,37 +27,37 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  
+
   .stepLine {
     flex: 1;
     height: 2px;
     background-color: #e1e1e1;
     margin: 0 15px;
-    margin-top: -20px; // align with circles
+    margin-top: -20px;
   }
-  
+
   .step {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 8px;
     opacity: 0.5;
-    
+
     &.active {
       opacity: 1;
-      
+
       .stepCircle {
         background-color: $color-primary;
         color: white;
         border-color: $color-primary;
       }
-      
+
       .stepLabel {
         color: $color-primary;
         font-weight: 700;
       }
     }
-    
+
     .stepCircle {
       width: 40px;
       height: 40px;
@@ -72,7 +72,7 @@
       background-color: white;
       z-index: 2;
     }
-    
+
     .stepLabel {
       font-size: 13px;
       color: #666;
@@ -101,11 +101,11 @@
   box-shadow: $shadow-sm;
   margin-bottom: 30px;
   border: 1px solid #e1e1e1;
-  
+
   @include responsive(sm) {
     flex-direction: column;
   }
-  
+
   .posterPlaceholder {
     width: 150px;
     aspect-ratio: 2/3;
@@ -118,40 +118,40 @@
     font-weight: bold;
     border-radius: 4px;
     flex-shrink: 0;
-    
+
     @include responsive(sm) {
       width: 120px;
       margin: 0 auto;
     }
   }
-  
+
   .movieDetails {
     flex: 1;
-    
+
     .movieTitle {
       font-size: 22px;
-      color: $color-primary; // T-CINE Blue
+      color: $color-primary;
       margin: 0 0 10px 0;
       font-weight: 700;
     }
-    
+
     .movieDesc {
       font-size: 14px;
       color: #555;
       margin-bottom: 15px;
       line-height: 1.5;
     }
-    
+
     .metaList {
       list-style: none;
       padding: 0;
       margin: 0 0 20px 0;
       font-size: 14px;
       color: #333;
-      
+
       li {
         margin-bottom: 5px;
-        
+
         strong {
           color: #666;
           display: inline-block;
@@ -159,30 +159,34 @@
         }
       }
     }
-    
-    .trailerBtn {
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      background-color: transparent;
-      border: 1px solid $color-primary;
-      color: $color-primary;
-      padding: 8px 15px;
-      border-radius: 20px;
-      font-weight: bold;
-      font-size: 13px;
-      cursor: pointer;
-      transition: all $transition-fast;
-      
-      .icon {
-        font-size: 18px;
-      }
-      
-      &:hover {
-        background-color: $color-primary;
-        color: white;
-      }
-    }
+  }
+}
+
+/* === LOADING STATE === */
+.loadingState {
+  text-align: center;
+  padding: 60px 20px;
+  color: #999;
+
+  .spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid #e5e7eb;
+    border-top-color: $color-primary;
+    border-radius: 50%;
+    margin: 0 auto 16px;
+    animation: spin 0.8s linear infinite;
+  }
+
+  p {
+    font-size: 15px;
+    color: #888;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
   }
 }
 
@@ -195,7 +199,40 @@
   padding: 60px 20px;
   color: #555;
 
-  p { margin: 6px 0; }
+  p {
+    margin: 6px 0;
+  }
+}
+
+/* === STEP REVEAL ANIMATION (ẩn/hiện từng bước) === */
+.stepReveal {
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  position: relative;
+  z-index: 1;
+  transform: translateY(-20px);
+  transition: max-height 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.4s ease 0.1s,
+    transform 0.4s ease 0.1s,
+    overflow 0s linear 0.5s;
+  pointer-events: none;
+
+  &.visible {
+    max-height: 1200px;
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+    overflow: visible;
+    transition: max-height 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+      opacity 0.4s ease 0.1s,
+      transform 0.4s ease 0.1s,
+      overflow 0s linear 0.5s;
+  }
+
+  &.hasOpenCalendar {
+    z-index: 50 !important;
+  }
 }
 
 /* === STEP BLOCK (Rạp / Ngày / Suất) === */
@@ -207,12 +244,6 @@
   border: 1px solid #e5e7eb;
   margin-bottom: 22px;
   transition: opacity 0.2s;
-
-  &.disabled {
-    opacity: 0.45;
-    pointer-events: none;
-    filter: grayscale(0.3);
-  }
 }
 
 .stepBlockHeader {
@@ -230,7 +261,9 @@
     align-items: center;
     gap: 6px;
 
-    svg { color: $color-primary; }
+    svg {
+      color: $color-primary;
+    }
   }
 
   .stepBadge {
@@ -244,12 +277,61 @@
     border-radius: 50%;
     font-weight: 700;
     font-size: 14px;
+    transition: all 0.3s ease;
+
+    &.completed {
+      background: #10b981;
+
+      svg {
+        font-size: 18px;
+      }
+    }
   }
 
   .contextHint {
     color: #6b7280;
     font-size: 13px;
     font-style: italic;
+  }
+
+  .cinemaCount {
+    margin-left: auto;
+    font-size: 13px;
+    color: #9ca3af;
+    background: #f3f4f6;
+    padding: 4px 12px;
+    border-radius: 20px;
+  }
+}
+
+.stepHint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: center;
+  color: $color-primary;
+  font-size: 14px;
+  margin-top: 16px;
+  padding: 12px;
+  background: rgba($color-primary, 0.05);
+  border-radius: 8px;
+  border: 1px dashed rgba($color-primary, 0.3);
+  animation: pulse-hint 2s ease-in-out infinite;
+
+  svg {
+    font-size: 18px;
+  }
+}
+
+@keyframes pulse-hint {
+
+  0%,
+  100% {
+    opacity: 0.7;
+  }
+
+  50% {
+    opacity: 1;
   }
 }
 
@@ -264,7 +346,7 @@
 /* --- Chọn rạp: chips --- */
 .cinemaChipList {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 12px;
 }
 
@@ -272,21 +354,32 @@
   position: relative;
   display: flex;
   align-items: flex-start;
-  gap: 10px;
-  padding: 14px 16px;
-  border-radius: 10px;
+  gap: 12px;
+  padding: 16px 18px;
+  border-radius: 12px;
   border: 2px solid #e5e7eb;
   background: #fff;
   cursor: pointer;
   text-align: left;
-  transition: all 0.2s;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   font: inherit;
 
-  .chipIcon {
-    font-size: 22px;
-    color: #9ca3af;
+  .chipIconWrap {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: #f3f4f6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     flex-shrink: 0;
-    margin-top: 2px;
+    transition: all 0.25s ease;
+  }
+
+  .chipIcon {
+    font-size: 20px;
+    color: #9ca3af;
+    transition: color 0.25s ease;
   }
 
   .chipText {
@@ -298,7 +391,9 @@
     strong {
       color: #1f2937;
       font-size: 15px;
+      transition: color 0.25s ease;
     }
+
     span {
       color: #6b7280;
       font-size: 12.5px;
@@ -308,75 +403,443 @@
 
   .chipCheck {
     color: $color-primary;
-    font-size: 20px;
+    font-size: 22px;
     align-self: center;
+    animation: check-pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   }
 
   &:hover {
     border-color: $color-primary;
-    background: rgba($color-primary, 0.04);
+    background: rgba($color-primary, 0.03);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba($color-primary, 0.1);
+
+    .chipIconWrap {
+      background: rgba($color-primary, 0.1);
+    }
+
+    .chipIcon {
+      color: $color-primary;
+    }
   }
 
   &.active {
     border-color: $color-primary;
-    background: rgba($color-primary, 0.08);
+    background: rgba($color-primary, 0.06);
+    box-shadow: 0 4px 16px rgba($color-primary, 0.15);
 
-    .chipIcon { color: $color-primary; }
-    strong { color: $color-primary; }
+    .chipIconWrap {
+      background: $color-primary;
+    }
+
+    .chipIcon {
+      color: #fff;
+    }
+
+    strong {
+      color: $color-primary;
+    }
+  }
+
+  &.noShowtime {
+    opacity: 0.65;
+    border-style: dashed;
+
+    &:hover {
+      opacity: 0.85;
+      border-color: #9ca3af;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+
+      .chipIconWrap {
+        background: #f3f4f6;
+      }
+
+      .chipIcon {
+        color: #9ca3af;
+      }
+    }
+
+    &.active {
+      opacity: 1;
+      border-color: #f59e0b;
+      border-style: solid;
+      background: rgba(#f59e0b, 0.04);
+      box-shadow: 0 4px 12px rgba(#f59e0b, 0.1);
+
+      .chipIconWrap {
+        background: #f59e0b;
+      }
+
+      .chipIcon {
+        color: #fff;
+      }
+
+      strong {
+        color: #b45309;
+      }
+    }
+  }
+
+  .noShowtimeLabel {
+    display: inline-block;
+    font-size: 11px;
+    color: #ef4444;
+    background: rgba(#ef4444, 0.08);
+    padding: 1px 8px;
+    border-radius: 10px;
+    font-weight: 600;
+    margin-top: 2px;
+    width: fit-content;
   }
 }
 
-/* --- Chọn ngày: date strip --- */
+@keyframes check-pop {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* --- Thông báo khi rạp không có suất chiếu --- */
+.noShowtimeState {
+  text-align: center;
+  padding: 40px 20px;
+  background: #fef3c7;
+  border-radius: 10px;
+  border: 1px dashed #f59e0b;
+}
+
+.noShowtimeMsg {
+  font-size: 15px;
+  color: #92400e;
+  margin: 12px 0 6px;
+
+  strong {
+    color: #b45309;
+  }
+}
+
+.noShowtimeHint {
+  font-size: 13px;
+  color: #a16207;
+  margin: 0;
+}
+
+/* --- Chọn ngày: navigation bar --- */
+.dateNavigation {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.navArrow {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  font: inherit;
+  color: #374151;
+
+  svg {
+    font-size: 22px;
+  }
+
+  &:hover:not(:disabled) {
+    border-color: $color-primary;
+    color: $color-primary;
+    background: rgba($color-primary, 0.05);
+  }
+
+  &:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+}
+
+.weekLabel {
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  min-width: 130px;
+  text-align: center;
+}
+
+/* --- Calendar picker button + popup --- */
+.calendarPickerWrap {
+  position: relative;
+  margin-left: auto;
+}
+
+.calendarBtn {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  font: inherit;
+  color: #374151;
+
+  svg {
+    font-size: 22px;
+  }
+
+  &:hover,
+  &.active {
+    border-color: $color-primary;
+    color: $color-primary;
+    background: rgba($color-primary, 0.06);
+  }
+}
+
+.calendarPopup {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 320px;
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+  border: 1px solid #e5e7eb;
+  padding: 16px;
+  z-index: $z-dropdown;
+  animation: calendar-slide-in 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes calendar-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.96);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.calendarPopupHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+
+  span {
+    font-size: 15px;
+    font-weight: 700;
+    color: #1f2937;
+  }
+
+  button {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: none;
+    background: #f3f4f6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #374151;
+    transition: all 0.15s;
+    font: inherit;
+
+    svg {
+      font-size: 20px;
+    }
+
+    &:hover {
+      background: $color-primary;
+      color: #fff;
+    }
+  }
+}
+
+.calendarGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.calDayHeader {
+  text-align: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: #9ca3af;
+  padding: 4px 0;
+  text-transform: uppercase;
+}
+
+.calDayEmpty {
+  aspect-ratio: 1;
+}
+
+.calDay {
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 500;
+  color: #6b7280;
+  cursor: pointer;
+  position: relative;
+  font: inherit;
+  font-size: 13px;
+  transition: all 0.15s;
+
+  &.past {
+    color: #d1d5db;
+    cursor: not-allowed;
+  }
+
+  &.today {
+    font-weight: 700;
+    color: $color-primary;
+  }
+
+  &:hover:not(.past):not(.selected) {
+    background: #f3f4f6;
+    color: #1f2937;
+  }
+
+  &.hasShowtime {
+    color: #1f2937;
+    font-weight: 600;
+
+    &:hover {
+      background: rgba($color-primary, 0.1);
+      color: $color-primary;
+    }
+  }
+
+  &.selected {
+    background: $color-primary;
+    color: #fff !important;
+    font-weight: 700;
+
+    .calDot {
+      background: #fff;
+    }
+  }
+}
+
+.calDot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: $color-primary;
+  position: absolute;
+  bottom: 3px;
+}
+
+/* --- Chọn ngày: date strip (hiện tuần) --- */
 .dateStrip {
   display: flex;
   gap: 10px;
   overflow-x: auto;
   padding-bottom: 6px;
-
-  .dateBtn {
-    flex-shrink: 0;
-    min-width: 78px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 10px 12px;
-    background: #fff;
-    border: 2px solid #e5e7eb;
-    border-radius: 10px;
-    cursor: pointer;
-    transition: all 0.2s;
-    font: inherit;
-
-    .dayNum {
-      font-size: 24px;
-      font-weight: 700;
-      color: #1f2937;
-      line-height: 1.1;
-    }
-    .dayStr {
-      font-size: 12px;
-      color: #6b7280;
-      margin-top: 2px;
-    }
-    .monthStr {
-      font-size: 11px;
-      color: #9ca3af;
-      margin-top: 2px;
-    }
-
-    &:hover {
-      border-color: $color-primary;
-    }
-    &.active {
-      background: $color-primary;
-      border-color: $color-primary;
-      .dayNum, .dayStr, .monthStr { color: #fff; }
-    }
-  }
 }
 
-/* --- Chọn suất: time grid (override hơn class showtimeGrid cũ) --- */
+.dateBtn {
+  flex-shrink: 0;
+  min-width: 86px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 14px;
+  background: #fff;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  font: inherit;
+  position: relative;
+  overflow: hidden;
+
+  .dayNum {
+    font-size: 24px;
+    font-weight: 700;
+    color: #1f2937;
+    line-height: 1.1;
+    transition: color 0.2s;
+  }
+
+  .dayStr {
+    font-size: 12px;
+    color: #6b7280;
+    margin-top: 2px;
+    transition: color 0.2s;
+  }
+
+  .monthStr {
+    font-size: 11px;
+    color: #9ca3af;
+    margin-top: 2px;
+    transition: color 0.2s;
+  }
+
+  .todayTag {
+    font-size: 9px;
+    font-weight: 700;
+    color: $color-primary;
+    background: rgba($color-primary, 0.1);
+    padding: 1px 6px;
+    border-radius: 8px;
+    margin-top: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+
+  &:hover:not(:disabled) {
+    border-color: $color-primary;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba($color-primary, 0.12);
+  }
+
+  &.active {
+    background: $color-primary;
+    border-color: $color-primary;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba($color-primary, 0.25);
+
+    .dayNum,
+    .dayStr,
+    .monthStr {
+      color: #fff;
+    }
+
+    .todayTag {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.2);
+    }
+  }
+
+}
+
+/* --- Chọn suất: time grid --- */
 .showtimeGrid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
@@ -392,9 +855,9 @@
   padding: 14px 10px;
   background: #fff;
   border: 2px solid #e5e7eb;
-  border-radius: 10px;
+  border-radius: 12px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   font: inherit;
 
   .time {
@@ -402,10 +865,12 @@
     font-weight: 700;
     color: #1f2937;
   }
+
   .room {
     font-size: 12px;
     color: #6b7280;
   }
+
   .priceTag {
     font-size: 11px;
     color: $color-primary;
@@ -416,19 +881,24 @@
   &:hover {
     border-color: $color-primary;
     background: rgba($color-primary, 0.05);
-    .time { color: $color-primary; }
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba($color-primary, 0.12);
+
+    .time {
+      color: $color-primary;
+    }
   }
 }
 
-/* === MAIN BOOKING CONTENT SPLIT (legacy, giữ để khỏi vỡ) === */
+/* === LEGACY STYLES (giữ để khỏi vỡ) === */
 .bookingContent {
   display: flex;
   gap: 30px;
   align-items: flex-start;
   margin-bottom: 50px;
-  
+
   @include responsive(lg) {
-    flex-direction: column-reverse; // Calendar on top on mobile
+    flex-direction: column-reverse;
   }
 }
 
@@ -439,269 +909,8 @@
 .sideColumn {
   width: 350px;
   flex-shrink: 0;
-  
+
   @include responsive(lg) {
     width: 100%;
-  }
-}
-
-/* === CINEMA LIST (LEFT) === */
-.cinemaList {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.cinemaItem {
-  background-color: white;
-  border-radius: 8px;
-  padding: 20px;
-  box-shadow: $shadow-sm;
-  border: 1px solid #e1e1e1;
-  
-  .cinemaHeader {
-    display: flex;
-    align-items: flex-start;
-    gap: 15px;
-    margin-bottom: 20px;
-    padding-bottom: 15px;
-    border-bottom: 1px dashed #ccc;
-    
-    .locationIcon {
-      color: $color-primary;
-      font-size: 32px;
-      background-color: rgba($color-primary, 0.1);
-      padding: 5px;
-      border-radius: 50%;
-    }
-    
-    .cinemaName {
-      font-size: 18px;
-      margin: 0 0 5px 0;
-      color: #333;
-    }
-    
-    .cinemaAddress {
-      font-size: 13px;
-      color: #777;
-      margin: 0;
-    }
-  }
-  
-  .formatLabel {
-    font-size: 14px;
-    font-weight: bold;
-    color: #333;
-    margin-bottom: 15px;
-  }
-  
-  .showtimeGrid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-    gap: 15px;
-    
-    .timeBtn {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      padding: 10px;
-      text-decoration: none;
-      color: #333;
-      background: white;
-      cursor: pointer;
-      font: inherit;
-      transition: all $transition-fast;
-      
-      .time {
-        font-size: 18px;
-        font-weight: bold;
-        color: #333;
-      }
-      
-      .seats {
-        font-size: 11px;
-        color: #00b156; // Green for available
-        margin-top: 4px;
-      }
-      
-      &:hover {
-        border-color: $color-primary;
-        background-color: rgba($color-primary, 0.05);
-        
-        .time {
-          color: $color-primary;
-        }
-      }
-    }
-  }
-}
-
-/* === CALENDAR (RIGHT) === */
-.calendarWidget {
-  background-color: #f2f0e4;
-  border-radius: 8px;
-  padding: 20px;
-  border: 1px solid #e1e1e1;
-  position: sticky;
-  top: 20px;
-  
-  .calendarHeader {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 20px;
-    
-    .calIcon {
-      color: $color-primary;
-      font-size: 24px;
-    }
-    
-    h3 {
-      margin: 0;
-      font-size: 18px;
-      color: #333;
-    }
-  }
-  
-  .dateSelector {
-    margin-bottom: 20px;
-    overflow-x: auto;
-    padding-bottom: 10px;
-    
-    .dateList {
-      display: flex;
-      gap: 10px;
-      
-      .dateBtn {
-        min-width: 60px;
-        height: 70px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        background-color: white;
-        border: 1px solid #ddd;
-        border-radius: 8px;
-        cursor: pointer;
-        transition: all $transition-fast;
-        flex-shrink: 0;
-        
-        .dayNum {
-          font-size: 22px;
-          font-weight: bold;
-          color: #333;
-        }
-        
-        .dayStr {
-          font-size: 12px;
-          color: #777;
-        }
-        
-        &:hover {
-          border-color: $color-primary;
-        }
-        
-        &.active {
-          background-color: $color-primary;
-          border-color: $color-primary;
-          
-          .dayNum, .dayStr {
-            color: white;
-          }
-        }
-      }
-    }
-  }
-  
-  .monthCalendarPlaceholder {
-    background-color: white;
-    height: 250px;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    color: #999;
-    font-size: 14px;
-    border: 1px dashed #ccc;
-  }
-}
-
-/* === 3. SPECIAL OFFERS === */
-.specialOffersSection {
-  background-color: #f2f0e4;
-  border-radius: 8px;
-  padding: 30px;
-  margin-top: 20px;
-  
-  .offerHeader {
-    text-align: center;
-    margin-bottom: 30px;
-    border-bottom: 2px solid #ccc;
-    line-height: 0.1em;
-    
-    .offerTitleBadge {
-      background: #f2f0e4;
-      padding: 0 20px;
-      font-size: 18px;
-      font-weight: bold;
-      color: #333;
-      border: 1px solid #ccc;
-      border-radius: 20px;
-      display: inline-block;
-      line-height: 2;
-    }
-  }
-  
-  .offerGrid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 20px;
-    
-    @include responsive(md) {
-      grid-template-columns: repeat(2, 1fr);
-    }
-    
-    @include responsive(sm) {
-      grid-template-columns: repeat(1, 1fr);
-    }
-    
-    .offerCard {
-      background-color: white;
-      border-radius: 8px;
-      overflow: hidden;
-      box-shadow: $shadow-sm;
-      padding-bottom: 15px;
-      
-      .offerImgPlaceholder {
-        width: 100%;
-        aspect-ratio: 1/1;
-        background-color: #d8e2eb;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: #666;
-        font-weight: bold;
-        text-align: center;
-        margin-bottom: 15px;
-      }
-      
-      .offerTitle {
-        font-size: 14px;
-        font-weight: bold;
-        margin: 0 15px 10px;
-        color: #333;
-      }
-      
-      .offerDesc {
-        font-size: 12px;
-        color: #777;
-        margin: 0 15px;
-        line-height: 1.4;
-      }
-    }
   }
 }

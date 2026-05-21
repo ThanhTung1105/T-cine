@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { MdLocationOn, MdCalendarToday, MdAccessTime, MdCheckCircle } from 'react-icons/md';
+import { MdLocationOn, MdCalendarToday, MdAccessTime, MdCheckCircle, MdChevronLeft, MdChevronRight, MdDateRange } from 'react-icons/md';
 import movieApi from '../../../api/movieApi';
+import cinemaApi from '../../../api/cinemaApi';
 import axiosClient from '../../../api/axiosClient';
 import useBookingStore from '../../../store/useBookingStore';
 import useAuthStore from '../../../store/useAuthStore';
@@ -15,6 +16,55 @@ const pad = (n) => String(n).padStart(2, '0');
 const toLocalDateKey = (d) =>
   `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 const DAY_LABELS = ['CN', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
+const DAY_LABELS_FULL = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
+const MONTH_NAMES = ['Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6', 'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12'];
+
+// Generate dates for a week starting from a given base date
+const getWeekDates = (baseDate) => {
+  const dates = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(baseDate);
+    d.setDate(baseDate.getDate() + i);
+    dates.push({
+      full: toLocalDateKey(d),
+      day: pad(d.getDate()),
+      dayName: DAY_LABELS[d.getDay()],
+      dayNameFull: DAY_LABELS_FULL[d.getDay()],
+      monthName: MONTH_NAMES[d.getMonth()],
+      month: d.getMonth() + 1,
+      year: d.getFullYear(),
+      dateObj: new Date(d),
+      isToday: toLocalDateKey(d) === toLocalDateKey(new Date()),
+    });
+  }
+  return dates;
+};
+
+// Generate a full month calendar grid
+const getCalendarMonth = (year, month) => {
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+  const startPad = firstDay.getDay(); // 0=CN
+  const totalDays = lastDay.getDate();
+
+  const cells = [];
+  // Padding before
+  for (let i = 0; i < startPad; i++) {
+    cells.push(null);
+  }
+  // Actual days
+  for (let d = 1; d <= totalDays; d++) {
+    const dateObj = new Date(year, month, d);
+    cells.push({
+      full: toLocalDateKey(dateObj),
+      day: d,
+      dateObj,
+      isToday: toLocalDateKey(dateObj) === toLocalDateKey(new Date()),
+      isPast: dateObj < new Date(new Date().setHours(0, 0, 0, 0)),
+    });
+  }
+  return cells;
+};
 
 const BookingPage = () => {
   const { id: movieId } = useParams();
@@ -23,10 +73,23 @@ const BookingPage = () => {
   const resetBooking = useBookingStore((s) => s.resetBooking);
 
   const [movie, setMovie] = useState(null);
+  const [allCinemas, setAllCinemas] = useState([]); // TẤT CẢ rạp trong hệ thống
   const [groupedByCinema, setGroupedByCinema] = useState([]); // [{cinema, showtimes:[...]}]
   const [selectedCinemaId, setSelectedCinemaId] = useState(null);
   const [selectedDate, setSelectedDate] = useState(null); // 'YYYY-MM-DD' local
   const [loading, setLoading] = useState(true);
+
+  // Week navigation
+  const [weekOffset, setWeekOffset] = useState(0);
+  // Calendar popup
+  const [showCalendar, setShowCalendar] = useState(false);
+  const [calMonth, setCalMonth] = useState(new Date().getMonth());
+  const [calYear, setCalYear] = useState(new Date().getFullYear());
+  const calendarRef = useRef(null);
+
+  // Step reveal refs for animation
+  const step2Ref = useRef(null);
+  const step3Ref = useRef(null);
 
   // Load thông tin phim
   useEffect(() => {
@@ -38,6 +101,19 @@ const BookingPage = () => {
       } catch (e) { console.error(e); }
     })();
   }, [movieId]);
+
+  // Load TẤT CẢ rạp trong hệ thống
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await cinemaApi.getAll();
+        setAllCinemas(res.data || []);
+      } catch (e) {
+        console.error(e);
+        setAllCinemas([]);
+      }
+    })();
+  }, []);
 
   // Load TẤT CẢ lịch chiếu của phim (1 lần, không truyền date) → lọc FE
   useEffect(() => {
@@ -56,11 +132,14 @@ const BookingPage = () => {
     })();
   }, [movieId]);
 
-  // Danh sách rạp có lịch chiếu phim này
-  const cinemas = useMemo(
-    () => groupedByCinema.map((g) => g.cinema).filter(Boolean),
-    [groupedByCinema],
-  );
+  // Set các ID rạp có suất chiếu cho phim này (để đánh dấu)
+  const cinemaIdsWithShowtimes = useMemo(() => {
+    const ids = new Set();
+    groupedByCinema.forEach((g) => {
+      if (g.cinema?.id) ids.add(g.cinema.id);
+    });
+    return ids;
+  }, [groupedByCinema]);
 
   // Showtimes của rạp đang chọn
   const cinemaShowtimes = useMemo(() => {
@@ -69,8 +148,8 @@ const BookingPage = () => {
     return group?.showtimes || [];
   }, [groupedByCinema, selectedCinemaId]);
 
-  // Các ngày có suất chiếu ở rạp đang chọn (theo local timezone)
-  const availableDates = useMemo(() => {
+  // Các ngày có suất chiếu ở rạp đang chọn (dạng Set cho tra nhanh)
+  const availableDateSet = useMemo(() => {
     const set = new Set();
     cinemaShowtimes.forEach((st) => {
       if (!st.start_time) return;
@@ -78,18 +157,22 @@ const BookingPage = () => {
       if (isNaN(d.getTime())) return;
       set.add(toLocalDateKey(d));
     });
-    const arr = Array.from(set).sort();
-    return arr.map((key) => {
-      const [y, m, day] = key.split('-').map(Number);
-      const d = new Date(y, m - 1, day);
-      return {
-        full: key,
-        day: pad(day),
-        dayName: DAY_LABELS[d.getDay()],
-        monthName: `Tháng ${m}`,
-      };
-    });
+    return set;
   }, [cinemaShowtimes]);
+
+  // Generate week dates based on current offset
+  const today = useMemo(() => new Date(), []);
+  const weekDates = useMemo(() => {
+    const base = new Date(today);
+    base.setDate(today.getDate() + weekOffset * 7);
+    return getWeekDates(base);
+  }, [today, weekOffset]);
+
+  // Calendar month cells
+  const calendarCells = useMemo(
+    () => getCalendarMonth(calYear, calMonth),
+    [calYear, calMonth],
+  );
 
   // Showtimes theo cả rạp + ngày
   const filteredShowtimes = useMemo(() => {
@@ -102,21 +185,59 @@ const BookingPage = () => {
       .sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
   }, [cinemaShowtimes, selectedDate]);
 
-  // Auto-pick rạp đầu tiên khi data về
-  useEffect(() => {
-    if (!selectedCinemaId && cinemas.length > 0) {
-      setSelectedCinemaId(cinemas[0].id);
-    }
-  }, [cinemas, selectedCinemaId]);
+  // KHÔNG auto-pick rạp (yêu cầu #1)
 
-  // Khi đổi rạp → auto-pick ngày đầu tiên có suất
+  // Khi đổi rạp → reset date, reset weekOffset
   useEffect(() => {
-    if (availableDates.length === 0) {
-      setSelectedDate(null);
-    } else if (!availableDates.some((d) => d.full === selectedDate)) {
-      setSelectedDate(availableDates[0].full);
+    setSelectedDate(null);
+    setWeekOffset(0);
+  }, [selectedCinemaId]);
+
+  // Close calendar on outside click
+  useEffect(() => {
+    const handler = (e) => {
+      if (calendarRef.current && !calendarRef.current.contains(e.target)) {
+        setShowCalendar(false);
+      }
+    };
+    if (showCalendar) {
+      document.addEventListener('mousedown', handler);
     }
-  }, [availableDates]); // eslint-disable-line react-hooks/exhaustive-deps
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showCalendar]);
+
+  const handleSelectCinema = useCallback((cinemaId) => {
+    setSelectedCinemaId(cinemaId);
+    // Smooth scroll to step 2 after a short delay for animation
+    setTimeout(() => {
+      step2Ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 300);
+  }, []);
+
+  const handleSelectDate = useCallback((dateKey) => {
+    setSelectedDate(dateKey);
+    setShowCalendar(false);
+    // Smooth scroll to step 3
+    setTimeout(() => {
+      step3Ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 300);
+  }, []);
+
+  const handleCalendarDateSelect = useCallback((dateKey) => {
+    // Check if date is in the current week view; if not, adjust week offset
+    const targetDate = new Date(dateKey);
+    const todayStart = new Date(today);
+    todayStart.setHours(0, 0, 0, 0);
+    const diffDays = Math.floor((targetDate - todayStart) / (1000 * 60 * 60 * 24));
+    const newWeekOffset = Math.floor(diffDays / 7);
+    setWeekOffset(newWeekOffset);
+    setSelectedDate(dateKey);
+    setShowCalendar(false);
+    // Smooth scroll to step 3
+    setTimeout(() => {
+      step3Ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 300);
+  }, [today]);
 
   const handleSelectShowtime = (showtimeId) => {
     if (!isAuthenticated) {
@@ -132,8 +253,14 @@ const BookingPage = () => {
     ? (movie.poster.startsWith('http') ? movie.poster : `${STORAGE_URL}/${movie.poster}`)
     : null;
 
-  const selectedCinema = cinemas.find((c) => c.id === selectedCinemaId);
+  const selectedCinema = allCinemas.find((c) => c.id === selectedCinemaId);
+  const selectedCinemaHasShowtimes = selectedCinemaId ? cinemaIdsWithShowtimes.has(selectedCinemaId) : false;
   const formatVnd = (n) => new Intl.NumberFormat('vi-VN').format(Math.round(Number(n) || 0));
+
+  // Week navigation label
+  const weekLabel = weekDates.length > 0
+    ? `${weekDates[0].day}/${weekDates[0].month} - ${weekDates[6].day}/${weekDates[6].month}/${weekDates[6].year}`
+    : '';
 
   return (
     <div className={styles.bookingPage}>
@@ -173,105 +300,229 @@ const BookingPage = () => {
         </div>
 
         {loading ? (
-          <p style={{ textAlign: 'center', color: '#aaa', padding: '60px' }}>Đang tải lịch chiếu...</p>
-        ) : cinemas.length === 0 ? (
-          <div className={styles.emptyState}>
-            <p>Hiện chưa có suất chiếu nào cho phim này.</p>
-            <p style={{ fontSize: 13, color: '#888' }}>Vui lòng quay lại sau hoặc chọn phim khác.</p>
+          <div className={styles.loadingState}>
+            <div className={styles.spinner}></div>
+            <p>Đang tải lịch chiếu...</p>
           </div>
         ) : (
           <>
-            {/* === BƯỚC 1.1: CHỌN RẠP === */}
+            {/* === BƯỚC 1: CHỌN RẠP (hiện TẤT CẢ rạp) === */}
             <section className={styles.stepBlock}>
               <div className={styles.stepBlockHeader}>
-                <span className={styles.stepBadge}>1</span>
+                <span className={`${styles.stepBadge} ${selectedCinemaId ? styles.completed : ''}`}>
+                  {selectedCinemaId ? <MdCheckCircle /> : '1'}
+                </span>
                 <h3><MdLocationOn /> Chọn rạp chiếu</h3>
+                <span className={styles.cinemaCount}>{allCinemas.length} rạp</span>
               </div>
               <div className={styles.cinemaChipList}>
-                {cinemas.map((c) => {
+                {allCinemas.map((c) => {
                   const active = c.id === selectedCinemaId;
+                  const hasShowtimes = cinemaIdsWithShowtimes.has(c.id);
                   return (
                     <button
                       key={c.id}
                       type="button"
-                      className={`${styles.cinemaChip} ${active ? styles.active : ''}`}
-                      onClick={() => setSelectedCinemaId(c.id)}
+                      className={`${styles.cinemaChip} ${active ? styles.active : ''} ${!hasShowtimes ? styles.noShowtime : ''}`}
+                      onClick={() => handleSelectCinema(c.id)}
                     >
-                      <MdLocationOn className={styles.chipIcon} />
+                      <div className={styles.chipIconWrap}>
+                        <MdLocationOn className={styles.chipIcon} />
+                      </div>
                       <div className={styles.chipText}>
                         <strong>{c.name}</strong>
                         {c.address && <span>{c.address}</span>}
+                        {!hasShowtimes && <span className={styles.noShowtimeLabel}>Không có suất chiếu</span>}
                       </div>
                       {active && <MdCheckCircle className={styles.chipCheck} />}
                     </button>
                   );
                 })}
               </div>
-            </section>
-
-            {/* === BƯỚC 1.2: CHỌN NGÀY === */}
-            <section className={`${styles.stepBlock} ${!selectedCinemaId ? styles.disabled : ''}`}>
-              <div className={styles.stepBlockHeader}>
-                <span className={styles.stepBadge}>2</span>
-                <h3><MdCalendarToday /> Chọn ngày xem</h3>
-                {selectedCinema && (
-                  <span className={styles.contextHint}>tại {selectedCinema.name}</span>
-                )}
-              </div>
-              {availableDates.length === 0 ? (
-                <p className={styles.subEmpty}>Rạp này chưa có lịch chiếu sắp tới.</p>
-              ) : (
-                <div className={styles.dateStrip}>
-                  {availableDates.map((d) => (
-                    <button
-                      key={d.full}
-                      type="button"
-                      className={`${styles.dateBtn} ${selectedDate === d.full ? styles.active : ''}`}
-                      onClick={() => setSelectedDate(d.full)}
-                    >
-                      <span className={styles.dayNum}>{d.day}</span>
-                      <span className={styles.dayStr}>{d.dayName}</span>
-                      <span className={styles.monthStr}>{d.monthName}</span>
-                    </button>
-                  ))}
-                </div>
+              {!selectedCinemaId && (
+                <p className={styles.stepHint}>
+                  <MdLocationOn /> Vui lòng chọn một rạp chiếu để tiếp tục
+                </p>
               )}
             </section>
 
-            {/* === BƯỚC 1.3: CHỌN SUẤT === */}
-            <section className={`${styles.stepBlock} ${(!selectedCinemaId || !selectedDate) ? styles.disabled : ''}`}>
-              <div className={styles.stepBlockHeader}>
-                <span className={styles.stepBadge}>3</span>
-                <h3><MdAccessTime /> Chọn suất chiếu</h3>
-                {selectedDate && (
-                  <span className={styles.contextHint}>
-                    ngày {selectedDate.split('-').reverse().join('/')}
+            {/* === BƯỚC 2: CHỌN NGÀY (hiện khi đã chọn rạp) === */}
+            <div
+              ref={step2Ref}
+              className={`${styles.stepReveal} ${selectedCinemaId ? styles.visible : ''} ${showCalendar ? styles.hasOpenCalendar : ''}`}
+            >
+              <section className={styles.stepBlock}>
+                <div className={styles.stepBlockHeader}>
+                  <span className={`${styles.stepBadge} ${selectedDate ? styles.completed : ''}`}>
+                    {selectedDate ? <MdCheckCircle /> : '2'}
                   </span>
-                )}
-              </div>
-              {filteredShowtimes.length === 0 ? (
-                <p className={styles.subEmpty}>Không có suất chiếu cho ngày này.</p>
-              ) : (
-                <div className={styles.showtimeGrid}>
-                  {filteredShowtimes.map((st) => (
-                    <button
-                      key={st.id}
-                      type="button"
-                      className={styles.timeBtn}
-                      onClick={() => handleSelectShowtime(st.id)}
-                    >
-                      <span className={styles.time}>
-                        {new Date(st.start_time).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
-                      </span>
-                      <span className={styles.room}>{st.room?.name}</span>
-                      {st.from_price ? (
-                        <span className={styles.priceTag}>từ {formatVnd(st.from_price)}đ</span>
-                      ) : null}
-                    </button>
-                  ))}
+                  <h3><MdCalendarToday /> Chọn ngày xem</h3>
+                  {selectedCinema && (
+                    <span className={styles.contextHint}>tại {selectedCinema.name}</span>
+                  )}
                 </div>
-              )}
-            </section>
+
+                {/* Nếu rạp không có suất chiếu → thông báo */}
+                {!selectedCinemaHasShowtimes ? (
+                  <div className={styles.noShowtimeState}>
+                    <MdAccessTime style={{ fontSize: 40, color: '#d1d5db' }} />
+                    <p className={styles.noShowtimeMsg}>Rạp <strong>{selectedCinema?.name}</strong> hiện không có suất chiếu cho phim này.</p>
+                    <p className={styles.noShowtimeHint}>Vui lòng chọn rạp khác hoặc quay lại sau.</p>
+                  </div>
+                ) : (
+                  <>
+                    {/* Week navigation */}
+                    <div className={styles.dateNavigation}>
+                      <button
+                        type="button"
+                        className={styles.navArrow}
+                        onClick={() => setWeekOffset((v) => Math.max(0, v - 1))}
+                        disabled={weekOffset === 0}
+                        title="Tuần trước"
+                      >
+                        <MdChevronLeft />
+                      </button>
+
+                      <span className={styles.weekLabel}>{weekLabel}</span>
+
+                      <button
+                        type="button"
+                        className={styles.navArrow}
+                        onClick={() => setWeekOffset((v) => v + 1)}
+                        title="Tuần sau"
+                      >
+                        <MdChevronRight />
+                      </button>
+
+                      {/* Calendar picker button */}
+                      <div className={styles.calendarPickerWrap} ref={calendarRef}>
+                        <button
+                          type="button"
+                          className={`${styles.calendarBtn} ${showCalendar ? styles.active : ''}`}
+                          onClick={() => setShowCalendar((v) => !v)}
+                          title="Chọn ngày từ lịch"
+                        >
+                          <MdDateRange />
+                        </button>
+
+                        {/* Calendar popup */}
+                        {showCalendar && (
+                          <div className={styles.calendarPopup}>
+                            <div className={styles.calendarPopupHeader}>
+                              <button type="button" onClick={() => {
+                                if (calMonth === 0) { setCalMonth(11); setCalYear((y) => y - 1); }
+                                else { setCalMonth((m) => m - 1); }
+                              }}><MdChevronLeft /></button>
+                              <span>{MONTH_NAMES[calMonth]} {calYear}</span>
+                              <button type="button" onClick={() => {
+                                if (calMonth === 11) { setCalMonth(0); setCalYear((y) => y + 1); }
+                                else { setCalMonth((m) => m + 1); }
+                              }}><MdChevronRight /></button>
+                            </div>
+                            <div className={styles.calendarGrid}>
+                              {['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'].map((lbl) => (
+                                <div key={lbl} className={styles.calDayHeader}>{lbl}</div>
+                              ))}
+                              {calendarCells.map((cell, i) => {
+                                if (!cell) return <div key={`pad-${i}`} className={styles.calDayEmpty} />;
+                                const hasShowtime = availableDateSet.has(cell.full);
+                                const isSelected = selectedDate === cell.full;
+                                return (
+                                  <button
+                                    key={cell.full}
+                                    type="button"
+                                    disabled={cell.isPast}
+                                    className={[
+                                      styles.calDay,
+                                      cell.isToday ? styles.today : '',
+                                      hasShowtime ? styles.hasShowtime : '',
+                                      isSelected ? styles.selected : '',
+                                      cell.isPast ? styles.past : '',
+                                    ].join(' ')}
+                                    onClick={() => !cell.isPast && handleCalendarDateSelect(cell.full)}
+                                    title={hasShowtime ? 'Có suất chiếu' : (cell.isPast ? '' : 'Không có suất chiếu')}
+                                  >
+                                    {cell.day}
+                                    {hasShowtime && <span className={styles.calDot} />}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Date strip — full week */}
+                    <div className={styles.dateStrip}>
+                      {weekDates.map((d) => {
+                        const hasShowtime = availableDateSet.has(d.full);
+                        const isSelected = selectedDate === d.full;
+                        return (
+                          <button
+                            key={d.full}
+                            type="button"
+                            className={[
+                              styles.dateBtn,
+                              isSelected ? styles.active : '',
+                              hasShowtime ? '' : styles.noShowtime,
+                              d.isToday ? styles.today : '',
+                            ].join(' ')}
+                            onClick={() => handleSelectDate(d.full)}
+                            title={hasShowtime ? `${d.dayNameFull} — có suất chiếu` : `${d.dayNameFull} — không có suất chiếu`}
+                          >
+                            <span className={styles.dayNum}>{d.day}</span>
+                            <span className={styles.dayStr}>{d.dayName}</span>
+                            <span className={styles.monthStr}>{d.monthName}</span>
+                            {d.isToday && <span className={styles.todayTag}>Hôm nay</span>}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </>
+                )}
+              </section>
+            </div>
+
+            {/* === BƯỚC 3: CHỌN SUẤT (hiện khi đã chọn ngày) === */}
+            <div
+              ref={step3Ref}
+              className={`${styles.stepReveal} ${selectedDate ? styles.visible : ''}`}
+            >
+              <section className={styles.stepBlock}>
+                <div className={styles.stepBlockHeader}>
+                  <span className={styles.stepBadge}>3</span>
+                  <h3><MdAccessTime /> Chọn suất chiếu</h3>
+                  {selectedDate && (
+                    <span className={styles.contextHint}>
+                      ngày {selectedDate.split('-').reverse().join('/')}
+                    </span>
+                  )}
+                </div>
+                {filteredShowtimes.length === 0 ? (
+                  <p className={styles.subEmpty}>Không có suất chiếu cho ngày này.</p>
+                ) : (
+                  <div className={styles.showtimeGrid}>
+                    {filteredShowtimes.map((st) => (
+                      <button
+                        key={st.id}
+                        type="button"
+                        className={styles.timeBtn}
+                        onClick={() => handleSelectShowtime(st.id)}
+                      >
+                        <span className={styles.time}>
+                          {new Date(st.start_time).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false })}
+                        </span>
+                        <span className={styles.room}>{st.room?.name}</span>
+                        {st.from_price ? (
+                          <span className={styles.priceTag}>từ {formatVnd(st.from_price)}đ</span>
+                        ) : null}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </section>
+            </div>
           </>
         )}
       </div>

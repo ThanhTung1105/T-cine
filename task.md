@@ -186,8 +186,8 @@ Tham khảo chi tiết tại `Frontend_API_Integration_Plan.md`.
 - [x] `RegisterPage.jsx` — Thêm `phone`, `password_confirmation`
 
 ### 6.2 Trang Khách Hàng
-- [x] `MovieSelection.jsx` — API `/movies/now-showing`
-- [x] `MovieListPage.jsx` — API phim đang/sắp chiếu + tìm kiếm
+- [x] `MovieSelection.jsx` — API `/movies/now-showing` (Sửa triệt để lỗi lệch poster bằng giải pháp padding-bottom: 150% kinh điển + absolute image + thêm min-width: 0 cho movieCard để ngăn tiêu đề dài nowrap kéo giãn cột Grid)
+- [x] `MovieListPage.jsx` — API phim đang/sắp chiếu + tìm kiếm (Sửa triệt để lỗi lệch poster bằng giải pháp padding-bottom: 150% kinh điển + absolute image + thêm min-width: 0 cho movieCard để ngăn tiêu đề dài nowrap kéo giãn cột Grid)
 - [x] `MovieDetailPage.jsx` — API `/movies/{id}` + trailer
 - [x] `BookingPage.jsx` — Luồng chọn 3 bước **Rạp → Ngày → Suất chiếu** (tuần tự, có badge số bước, các block sau sẽ disable mờ khi chưa chọn xong block trước). Fetch 1 lần tất cả lịch chiếu sắp tới của phim, lọc client-side theo rạp/ngày để mượt. **Sửa bug timezone**: trước dùng `toISOString().split('T')[0]` (sai sang UTC khi máy UTC+7 → label "20" nhưng query date="19") → giờ format local `YYYY-MM-DD` chuẩn. Hiển thị giá tham khảo "từ X đ" trên mỗi suất.
 - [x] `CinemaListPage.jsx` — API danh sách rạp
@@ -225,9 +225,14 @@ Tham khảo chi tiết tại `Frontend_API_Integration_Plan.md`.
 ## Phase 7: Còn Lại / Cần Làm Tiếp
 
 - [x] ~~Trang Thanh Toán (`PaymentPage`) — luồng thanh toán mô phỏng (mock VNPay/MoMo/ZaloPay)~~ ✅ *Đã xong*
+- [x] Sửa lỗi trùng lịch chiếu & tích hợp panel trực quan xem trạng thái phòng chiếu trống khi thêm lịch chiếu (Đã sửa lỗi hiển thị ô tình trạng phòng & đồng bộ múi giờ local UTC+7) ✅
 - [ ] Trang Cộng Đồng (`CommunityPage`) — nội dung & API (nếu cần)
-- [ ] Tích hợp Chatbot AI Gemini (`chatbotApi.js` đã có file, cần kết nối UI ChatWidget + Gemini API)
+- [/] Tích hợp Chatbot AI Gemini (Xem chi tiết công việc tại Phase 9)
 - [x] ~~Quản lý Khuyến mãi (mã giảm giá) trong Admin (`PromotionManagePage`)~~ ✅ *Đã xong*
+- [x] Thiết kế lại trang Đặt vé (`BookingPage`) ✅:
+  - [x] Bước 1: Hiện đầy đủ tất cả rạp, không auto-select. Bước 2 ẩn cho đến khi chọn rạp (chuyển cảnh animation slide-down)
+  - [x] Bước 2: Hiện ngày theo tuần + biểu tượng lịch (date picker popup) cho khách chọn ngày ngoài tuần hiện tại
+  - [x] Fix lỗi: Nhấn chọn suất chiếu bị điều hướng sang trang admin → tách route đặt vé ra khỏi `requiredRole="customer"`, chỉ cần đăng nhập
 - [ ] Kiểm thử end-to-end các luồng nghiệp vụ: Đăng ký → Đặt vé → Thanh toán → Xem lịch sử
 - [ ] Triển khai (Deployment): Backend (Laravel) + Frontend (Vite build)
 
@@ -273,3 +278,24 @@ Tham số `folder` quyết định ảnh được lưu vào thư mục con nào 
 - [x] `OrderHistoryPage` + `TicketDetailModal` — thay `alert/window.confirm` bằng `notify + confirmDialog` global
 - [x] `BookingSuccessPage` (`/dat-ve-thanh-cong/:bookingId`) — trang xác nhận đặt vé thành công, hiển thị mã đơn, phim, rạp, ghế, combo, mã giao dịch
 - [x] Cập nhật `customerRoutes.jsx` — chuẩn hoá `/dat-ve/:id`, `/chon-ghe/:showtimeId`, `/bap-nuoc`, `/thanh-toan`, `/mock-payment/:bookingId`, `/dat-ve-thanh-cong/:bookingId`
+
+---
+
+## Phase 9: Hệ thống Chatbot AI tư vấn phim (Gemini API)
+
+### Backend (Laravel)
+- [ ] Viết `ChatbotController` xử lý gửi tin nhắn (nhận tin nhắn mới + mảng history từ client gửi lên)
+- [ ] Thiết lập logic RAG context (truy vấn Phim đang/sắp chiếu, Rạp, Khuyến mãi thực tế từ DB) nhúng vào System Instruction
+- [ ] Kết nối Gemini API (`gemini-1.5-flash`) thông qua Laravel HTTP Client trực tiếp
+- [ ] Đăng ký endpoint công khai `POST /api/chatbot/message` trong `routes/api.php` (đáp ứng yêu cầu: cả khách chưa đăng nhập và đã đăng nhập đều dùng được)
+
+### Frontend (React & SCSS)
+- [ ] Cập nhật API client `chatbotApi.js` (chỉ giữ lại hàm `sendMessage` truyền kèm tin nhắn và history)
+- [ ] Tạo component `ChatWidget.jsx` với giao diện bong bóng nổi (Floating Chat Bubble) ở góc màn hình
+- [ ] Thiết kế style `ChatWidget.module.scss` với phong cách Glassmorphism và Neon Glow Premium
+- [ ] Tích hợp `ChatWidget` vào layout chung `CustomerLayout.jsx` để xuất hiện ở mọi trang client
+- [ ] Xây dựng bộ parse Markdown đơn giản (Regex) hiển thị chữ đậm, gạch đầu dòng từ câu trả lời của AI
+- [ ] Tạo Quick Suggestion Chips (câu hỏi gợi ý nhanh) hỗ trợ người dùng hỏi nhanh và nút Thùng rác để reset cuộc hội thoại (làm sạch state)
+- [ ] Hiển thị Typing Indicator hoạt họa nhịp nhàng khi đợi AI phản hồi
+
+
