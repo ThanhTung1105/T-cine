@@ -83,7 +83,9 @@
   transition: all $transition-fast;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
 
-  .icon { font-size: 13px; }
+  .icon {
+    font-size: 13px;
+  }
 
   &:hover {
     background-color: lighten($color-secondary, 6%);
@@ -110,7 +112,9 @@
   border-radius: 9999px;
   transition: background-color $transition-fast;
 
-  strong { font-weight: 700; }
+  strong {
+    font-weight: 700;
+  }
 
   .adminTag {
     font-style: normal;
@@ -256,8 +260,17 @@
 }
 
 @keyframes starPulse {
-  0%, 100% { transform: scale(1) rotate(0deg); opacity: 1; }
-  50% { transform: scale(1.2) rotate(15deg); opacity: 0.85; }
+
+  0%,
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+
+  50% {
+    transform: scale(1.2) rotate(15deg);
+    opacity: 0.85;
+  }
 }
 
 /* === NAV MENU === */
@@ -271,11 +284,13 @@
     padding: 0;
     gap: 6px;
 
-    > li {
+    >li {
       position: relative;
 
       &.hasDropdown:hover {
-        .chevron { transform: rotate(180deg); }
+        .chevron {
+          transform: rotate(180deg);
+        }
 
         .dropdown {
           opacity: 1;
@@ -333,15 +348,21 @@
     color: $color-primary;
     background-color: rgba($color-primary, 0.06);
 
-    .navIcon { transform: translateY(-2px); }
+    .navIcon {
+      transform: translateY(-2px);
+    }
 
-    &::after { transform: scaleX(1); }
+    &::after {
+      transform: scaleX(1);
+    }
   }
 
   &.activeNav {
     color: $color-primary;
 
-    &::after { transform: scaleX(1); }
+    &::after {
+      transform: scaleX(1);
+    }
   }
 }
 
@@ -395,7 +416,10 @@
   padding: 6px 0;
 
   /* Scrollbar mảnh */
-  &::-webkit-scrollbar { width: 6px; }
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
   &::-webkit-scrollbar-thumb {
     background: rgba($color-primary, 0.3);
     border-radius: 3px;
@@ -455,7 +479,10 @@
       border-left-color: $color-primary;
       padding-left: 18px;
 
-      .cinemaName { color: $color-primary; }
+      .cinemaName {
+        color: $color-primary;
+      }
+
       .cinemaIcon {
         background: $color-primary;
         color: white;
@@ -518,9 +545,13 @@
     transform: translateY(-2px);
     box-shadow: 0 10px 22px rgba($color-primary, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.2);
 
-    &::before { left: 100%; }
+    &::before {
+      left: 100%;
+    }
 
-    .ctaIcon { transform: rotate(-12deg) scale(1.1); }
+    .ctaIcon {
+      transform: rotate(-12deg) scale(1.1);
+    }
   }
 
   &:active {
@@ -584,10 +615,14 @@
   .ctaBtn {
     padding: 8px 14px;
 
-    .ctaMain { font-size: 12px; }
+    .ctaMain {
+      font-size: 12px;
+    }
   }
 }
 
 @include responsive(sm) {
-  .navMenu { display: none; }
+  .navMenu {
+    display: none;
+  }
 }

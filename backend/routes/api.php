@@ -16,6 +16,7 @@ use App\Http\Controllers\BannerController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PricingController;
+use App\Http\Controllers\ChatbotController;
 
 // Controllers Admin
 use App\Http\Controllers\Admin\MovieController as AdminMovieController;
@@ -74,6 +75,9 @@ Route::get('/events/{id}', [EventController::class, 'show']);
 
 // --- Bảng giá vé (public read-only) ---
 Route::get('/pricings/active', [PricingController::class, 'active']);
+
+// --- Chatbot AI tư vấn phim (public) ---
+Route::post('/chatbot/message', [ChatbotController::class, 'sendMessage']);
 
 /*
 |--------------------------------------------------------------------------

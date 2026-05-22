@@ -227,7 +227,7 @@ Tham khảo chi tiết tại `Frontend_API_Integration_Plan.md`.
 - [x] ~~Trang Thanh Toán (`PaymentPage`) — luồng thanh toán mô phỏng (mock VNPay/MoMo/ZaloPay)~~ ✅ *Đã xong*
 - [x] Sửa lỗi trùng lịch chiếu & tích hợp panel trực quan xem trạng thái phòng chiếu trống khi thêm lịch chiếu (Đã sửa lỗi hiển thị ô tình trạng phòng & đồng bộ múi giờ local UTC+7) ✅
 - [ ] Trang Cộng Đồng (`CommunityPage`) — nội dung & API (nếu cần)
-- [/] Tích hợp Chatbot AI Gemini (Xem chi tiết công việc tại Phase 9)
+- [x] Tích hợp Chatbot AI Gemini (Xem chi tiết công việc tại Phase 9) ✅
 - [x] ~~Quản lý Khuyến mãi (mã giảm giá) trong Admin (`PromotionManagePage`)~~ ✅ *Đã xong*
 - [x] Thiết kế lại trang Đặt vé (`BookingPage`) ✅:
   - [x] Bước 1: Hiện đầy đủ tất cả rạp, không auto-select. Bước 2 ẩn cho đến khi chọn rạp (chuyển cảnh animation slide-down)
@@ -281,21 +281,37 @@ Tham số `folder` quyết định ảnh được lưu vào thư mục con nào 
 
 ---
 
-## Phase 9: Hệ thống Chatbot AI tư vấn phim (Gemini API)
+## Phase 9: Hệ thống Chatbot AI tư vấn phim (Gemini API) ✅ *(Chú ý: API đang chờ người dùng cung cấp GEMINI_API_KEY trong file .env ở Backend)*
 
 ### Backend (Laravel)
-- [ ] Viết `ChatbotController` xử lý gửi tin nhắn (nhận tin nhắn mới + mảng history từ client gửi lên)
-- [ ] Thiết lập logic RAG context (truy vấn Phim đang/sắp chiếu, Rạp, Khuyến mãi thực tế từ DB) nhúng vào System Instruction
-- [ ] Kết nối Gemini API (`gemini-1.5-flash`) thông qua Laravel HTTP Client trực tiếp
-- [ ] Đăng ký endpoint công khai `POST /api/chatbot/message` trong `routes/api.php` (đáp ứng yêu cầu: cả khách chưa đăng nhập và đã đăng nhập đều dùng được)
+- [x] Viết `ChatbotController` xử lý gửi tin nhắn (nhận tin nhắn mới + mảng history từ client gửi lên) ✅
+- [x] Thiết lập logic RAG context (truy vấn Phim đang/sắp chiếu, Rạp, Khuyến mãi thực tế từ DB) nhúng vào System Instruction ✅
+- [x] Kết nối Gemini API (`gemini-1.5-flash`) thông qua Laravel HTTP Client trực tiếp ✅ *(Lưu ý: Chờ người dùng lấy API key)*
+- [x] Đăng ký endpoint công khai `POST /api/chatbot/message` trong `routes/api.php` (đáp ứng yêu cầu: cả khách chưa đăng nhập và đã đăng nhập đều dùng được) ✅
 
 ### Frontend (React & SCSS)
-- [ ] Cập nhật API client `chatbotApi.js` (chỉ giữ lại hàm `sendMessage` truyền kèm tin nhắn và history)
-- [ ] Tạo component `ChatWidget.jsx` với giao diện bong bóng nổi (Floating Chat Bubble) ở góc màn hình
-- [ ] Thiết kế style `ChatWidget.module.scss` với phong cách Glassmorphism và Neon Glow Premium
-- [ ] Tích hợp `ChatWidget` vào layout chung `CustomerLayout.jsx` để xuất hiện ở mọi trang client
-- [ ] Xây dựng bộ parse Markdown đơn giản (Regex) hiển thị chữ đậm, gạch đầu dòng từ câu trả lời của AI
-- [ ] Tạo Quick Suggestion Chips (câu hỏi gợi ý nhanh) hỗ trợ người dùng hỏi nhanh và nút Thùng rác để reset cuộc hội thoại (làm sạch state)
-- [ ] Hiển thị Typing Indicator hoạt họa nhịp nhàng khi đợi AI phản hồi
+- [x] Cập nhật API client `chatbotApi.js` (chỉ giữ lại hàm `sendMessage` truyền kèm tin nhắn và history) ✅
+- [x] Tạo component `ChatWidget.jsx` với giao diện bong bóng nổi (Floating Chat Bubble) ở góc màn hình ✅
+- [x] Thiết kế style `ChatWidget.module.scss` với phong cách Glassmorphism và Neon Glow Premium ✅
+- [x] Tích hợp `ChatWidget` vào layout chung `CustomerLayout.jsx` để xuất hiện ở mọi trang client ✅
+- [x] Xây dựng bộ parse Markdown đơn giản (Regex) hiển thị chữ đậm, gạch đầu dòng từ câu trả lời của AI ✅
+- [x] Tạo Quick Suggestion Chips (câu hỏi gợi ý nhanh) hỗ trợ người dùng hỏi nhanh và nút Thùng rác để reset cuộc hội thoại (làm sạch state) ✅
+- [x] Hiển thị Typing Indicator hoạt họa nhịp nhàng khi đợi AI phản hồi ✅
+
+---
+
+## Phase 10: Rà soát Bảo mật Cơ sở dữ liệu & Nâng cấp Năng lực Chatbot AI ✅
+
+### An toàn & Bảo mật Dữ liệu (Database Security)
+- [x] Rà soát và phân loại bảo mật toàn bộ 24 bảng dữ liệu trong hệ thống, phân chia rõ ràng bảng AI được phép đọc và bảng nhạy cảm tuyệt đối cấm AI truy cập ✅
+- [x] Tạo tài liệu hướng dẫn lưu trữ chính thức [thong_tin_AI.md](file:///d:/doan/backend/thong_tin_AI.md) đặt trực tiếp trong thư mục gốc backend để quản lý lâu dài quy định bảo mật của AI ✅
+
+### Backend (Laravel - ChatbotController)
+- [x] Tích hợp bảng `combos` (Bắp nước) để AI có thể nắm bắt thực đơn concessions và giá cả tư vấn khách hàng ✅
+- [x] Tích hợp bảng `showtimes` (Lịch chiếu) liên kết Phim, Phòng, Rạp và bộ lọc thời gian lùi ngày (`subDays(1)`) giúp hiển thị đầy đủ lịch chiếu chạy thử ngày 21/05/2026 ✅
+- [x] Cải tiến truy vấn Khuyến mãi (`promotions`) truyền toàn bộ dữ liệu kèm ngày hiệu lực để AI tự so sánh, tránh trả về danh sách rỗng ✅
+- [x] Củng cố quy tắc Prompt (`systemInstruction`) bổ sung kiến thức bắp nước, lịch chiếu và chỉ thị bảo mật chặn tuyệt đối các câu hỏi nhạy cảm cá nhân ✅
+- [x] Xác minh cú pháp không có lỗi (`No syntax errors`) và dọn dẹp các tệp tin tạm để đảm bảo dự án sạch đẹp ✅
+
 
 
