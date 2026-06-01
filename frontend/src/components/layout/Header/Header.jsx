@@ -5,13 +5,12 @@ import { RiNewspaperLine, RiVipCrownLine } from 'react-icons/ri';
 import { MdLogout, MdMovie, MdLocationOn, MdLocalActivity, MdLocationCity } from 'react-icons/md';
 import useAuthStore from '../../../store/useAuthStore';
 import cinemaApi from '../../../api/cinemaApi';
-import Toast from '../../Toast/Toast';
+import { notify } from '../../../utils/notify';
 import styles from './Header.module.scss';
 
 const Header = () => {
   const { isAuthenticated, user, logout } = useAuthStore();
   const navigate = useNavigate();
-  const [toast, setToast] = useState(null);
   const [scrolled, setScrolled] = useState(false);
 
   const isAdmin = isAuthenticated && user?.role === 'admin';
@@ -42,7 +41,7 @@ const Header = () => {
 
   const handleLogout = async () => {
     await logout();
-    setToast({ message: 'Đăng xuất thành công! Hẹn gặp lại bạn.', type: 'success' });
+    notify.success('Đăng xuất thành công! Hẹn gặp lại bạn.', 'Tạm biệt');
     setTimeout(() => navigate('/'), 1500);
   };
 
@@ -204,7 +203,6 @@ const Header = () => {
         </div>
       </header>
 
-      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
     </>
   );
 };

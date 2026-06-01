@@ -14,6 +14,7 @@ class EventController extends Controller
     {
         $query = Event::where('is_active', true)
             ->with('promotion')
+            ->orderBy('start_date', 'desc')
             ->orderBy('created_at', 'desc');
 
         if ($request->category) {

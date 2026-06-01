@@ -36,6 +36,7 @@ const ShowtimeManagePage = () => {
   const [rooms, setRooms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [errors, setErrors] = useState({});
   const [formData, setFormData] = useState({
     movie_id: '', room_id: '', cinema_id: '', start_date: '', start_time: '09:00', duration: 120,
   });
@@ -87,6 +88,7 @@ const ShowtimeManagePage = () => {
 
   const handleCinemaChange = async (cinemaId) => {
     setFormData(prev => ({ ...prev, cinema_id: cinemaId, room_id: '' }));
+    setErrors(prev => ({ ...prev, cinema_id: '', room_id: '' }));
     if (cinemaId) {
       try {
         const res = await cinemaApi.getRooms(cinemaId);
@@ -95,18 +97,23 @@ const ShowtimeManagePage = () => {
     } else { setRooms([]); }
   };
 
-  const handleChange = (e) => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+  const handleChange = (e) => {
+    setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    setErrors(prev => ({ ...prev, [e.target.name]: '' }));
+  };
 
   const handleTimeChange = (type, value) => {
     const [h, m] = (formData.start_time || "09:00").split(":");
     const newTime = type === 'hour' ? `${value}:${m}` : `${h}:${value}`;
     setFormData(prev => ({ ...prev, start_time: newTime }));
+    setErrors(prev => ({ ...prev, start_time: '' }));
   };
 
   const handleOpenModal = () => {
     setEditingSt(null);
     setFormData({ movie_id: '', room_id: '', cinema_id: '', start_date: '', start_time: '09:00', duration: 120 });
     setRooms([]);
+    setErrors({});
     setIsModalOpen(true);
   };
 
@@ -139,11 +146,16 @@ const ShowtimeManagePage = () => {
       start_time: timePart,
       duration: st.movie?.duration || 120,
     });
+    setErrors({});
     if (cinemaId) handleCinemaChange(cinemaId);
     setIsModalOpen(true);
   };
 
-  const handleCloseModal = () => { setIsModalOpen(false); setEditingSt(null); };
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setEditingSt(null);
+    setErrors({});
+  };
 
   const handleDelete = async (id) => {
     const ok = await confirmDialog({
@@ -164,16 +176,25 @@ const ShowtimeManagePage = () => {
   };
 
   const handleSave = async () => {
-    if (!formData.movie_id || !formData.room_id || !formData.start_date || !formData.start_time) {
-      notify.warning('Vui lòng điền đầy đủ thông tin!');
+    const newErrors = {};
+    if (!formData.movie_id) newErrors.movie_id = 'Vui lòng chọn phim';
+    if (!formData.cinema_id) newErrors.cinema_id = 'Vui lòng chọn rạp';
+    if (!formData.room_id) newErrors.room_id = 'Vui lòng chọn phòng chiếu';
+    if (!formData.start_date) newErrors.start_date = 'Vui lòng chọn ngày chiếu';
+    if (!formData.start_time) newErrors.start_time = 'Vui lòng chọn giờ chiếu';
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
       return;
     }
+
+    setErrors({});
     setSaving(true);
     try {
       // Tạo Date trong local time để tránh lệch UTC khi serialize end_time
       const startDate = new Date(`${formData.start_date}T${formData.start_time}:00`);
       if (isNaN(startDate.getTime())) {
-        notify.warning('Ngày/giờ chiếu không hợp lệ.');
+        setErrors({ start_date: 'Ngày/giờ chiếu không hợp lệ' });
         setSaving(false);
         return;
       }
@@ -258,32 +279,39 @@ const ShowtimeManagePage = () => {
             <div className={styles.modalBody}>
               <div className={styles.modalSplitLayout}>
                 <div className={styles.formColumn}>
-                  <form className={styles.form} onSubmit={e => e.preventDefault()}>
+                  <form className={styles.form} onSubmit={e => e.preventDefault()} noValidate>
                     <div className={styles.formGroup}>
                       <label>Chọn Phim *</label>
-                      <select name="movie_id" value={formData.movie_id} onChange={(e) => { handleChange(e); const m = movies.find(m => m.id == e.target.value); if (m) setFormData(prev => ({...prev, duration: m.duration || 120})); }}>
+                      <select name="movie_id" value={formData.movie_id} onChange={(e) => { handleChange(e); const m = movies.find(m => m.id == e.target.value); if (m) setFormData(prev => ({...prev, duration: m.duration || 120})); }} className={errors.movie_id ? 'inputErrorGlobal' : ''}>
                         <option value="">-- Lựa chọn Phim --</option>
                         {movies.map(m => <option key={m.id} value={m.id}>{m.title}</option>)}
                       </select>
+                      {errors.movie_id && <span className="errorTextGlobal">{errors.movie_id}</span>}
                     </div>
                     <div className={styles.formRow}>
                       <div className={styles.formGroup}>
                         <label>Chọn Rạp *</label>
-                        <select name="cinema_id" value={formData.cinema_id} onChange={(e) => handleCinemaChange(e.target.value)}>
+                        <select name="cinema_id" value={formData.cinema_id} onChange={(e) => handleCinemaChange(e.target.value)} className={errors.cinema_id ? 'inputErrorGlobal' : ''}>
                           <option value="">-- Lựa chọn Rạp --</option>
                           {cinemas.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                         </select>
+                        {errors.cinema_id && <span className="errorTextGlobal">{errors.cinema_id}</span>}
                       </div>
                       <div className={styles.formGroup}>
                         <label>Phòng chiếu *</label>
-                        <select name="room_id" value={formData.room_id} onChange={handleChange}>
+                        <select name="room_id" value={formData.room_id} onChange={handleChange} className={errors.room_id ? 'inputErrorGlobal' : ''}>
                           <option value="">-- Lựa chọn Phòng --</option>
                           {rooms.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
                         </select>
+                        {errors.room_id && <span className="errorTextGlobal">{errors.room_id}</span>}
                       </div>
                     </div>
                     <div className={styles.formRow}>
-                      <div className={styles.formGroup}><label>Ngày chiếu *</label><input type="date" name="start_date" value={formData.start_date} onChange={handleChange} /></div>
+                      <div className={styles.formGroup}>
+                        <label>Ngày chiếu *</label>
+                        <input type="date" name="start_date" value={formData.start_date} onChange={handleChange} className={errors.start_date ? 'inputErrorGlobal' : ''} />
+                        {errors.start_date && <span className="errorTextGlobal">{errors.start_date}</span>}
+                      </div>
                       <div className={styles.formGroup}>
                         <label>Giờ chiếu *</label>
                         <div className={styles.timeSelectRow}>

@@ -17,7 +17,7 @@ import {
 import authApi from '../../../api/authApi';
 import bookingApi from '../../../api/bookingApi';
 import useAuthStore from '../../../store/useAuthStore';
-import Toast from '../../../components/Toast/Toast';
+import { notify, translateError } from '../../../utils/notify';
 import styles from './ProfilePage.module.scss';
 
 const TABS = [
@@ -29,11 +29,11 @@ const ProfilePage = () => {
   const { user, setUser } = useAuthStore();
 
   const [activeTab, setActiveTab] = useState('profile');
-  const [toast, setToast] = useState(null);
 
   // ===== Profile form =====
   const [formData, setFormData] = useState({ name: '', phone: '' });
   const [saving, setSaving] = useState(false);
+  const [errors, setErrors] = useState({});
 
   // ===== Password form =====
   const [pwData, setPwData] = useState({
@@ -43,6 +43,7 @@ const ProfilePage = () => {
   });
   const [showPw, setShowPw] = useState({ current: false, new: false, confirm: false });
   const [savingPw, setSavingPw] = useState(false);
+  const [pwErrors, setPwErrors] = useState({});
 
   // ===== Stats (số đơn, vé, …) =====
   const [stats, setStats] = useState({ total: 0, paid: 0, pending: 0 });
@@ -71,26 +72,46 @@ const ProfilePage = () => {
     fetchStats();
   }, []);
 
-  const handleChange = (e) =>
+  const handleChange = (e) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    setErrors((prev) => ({ ...prev, [e.target.name]: '' }));
+  };
 
-  const handlePwChange = (e) =>
+  const handlePwChange = (e) => {
     setPwData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    setPwErrors((prev) => ({ ...prev, [e.target.name]: '' }));
+  };
 
   const handleSaveProfile = async (e) => {
     e.preventDefault();
+    const newErrors = {};
     if (!formData.name.trim()) {
-      setToast({ message: 'Vui lòng nhập họ tên.', type: 'error' });
+      newErrors.name = 'Họ và tên không được để trống';
+    }
+    if (formData.phone && !/^[0-9]{10,11}$/.test(formData.phone.trim())) {
+      newErrors.phone = 'Số điện thoại phải từ 10 đến 11 số';
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
       return;
     }
+
     setSaving(true);
     try {
-      const res = await authApi.updateProfile(formData);
+      const res = await authApi.updateProfile({
+        name: formData.name.trim(),
+        phone: formData.phone.trim() || null
+      });
       setUser(res.data || res.user || { ...user, ...formData });
-      setToast({ message: 'Cập nhật thông tin thành công!', type: 'success' });
+      notify.success('Cập nhật thông tin cá nhân thành công!', 'Thành công');
     } catch (err) {
-      const msg = err.response?.data?.message || 'Cập nhật thất bại!';
-      setToast({ message: msg, type: 'error' });
+      if (err.response?.data?.errors) {
+        setErrors(err.response.data.errors);
+      } else {
+        const msg = err.response?.data?.message || 'Cập nhật thất bại!';
+        notify.error(translateError(msg), 'Cập nhật thất bại');
+      }
     } finally {
       setSaving(false);
     }
@@ -98,25 +119,43 @@ const ProfilePage = () => {
 
   const handleChangePassword = async (e) => {
     e.preventDefault();
-    if (pwData.password.length < 6) {
-      setToast({ message: 'Mật khẩu mới phải có ít nhất 6 ký tự.', type: 'error' });
+    const newPwErrors = {};
+    if (!pwData.current_password) {
+      newPwErrors.current_password = 'Vui lòng nhập mật khẩu hiện tại';
+    } else if (pwData.current_password.length < 6) {
+      newPwErrors.current_password = 'Mật khẩu hiện tại phải từ 6 ký tự trở lên';
+    }
+
+    if (!pwData.password) {
+      newPwErrors.password = 'Vui lòng nhập mật khẩu mới';
+    } else if (pwData.password.length < 6) {
+      newPwErrors.password = 'Mật khẩu mới phải từ 6 ký tự trở lên';
+    }
+
+    if (!pwData.password_confirmation) {
+      newPwErrors.password_confirmation = 'Vui lòng xác nhận mật khẩu mới';
+    } else if (pwData.password !== pwData.password_confirmation) {
+      newPwErrors.password_confirmation = 'Mật khẩu xác nhận không khớp';
+    }
+
+    if (Object.keys(newPwErrors).length > 0) {
+      setPwErrors(newPwErrors);
       return;
     }
-    if (pwData.password !== pwData.password_confirmation) {
-      setToast({ message: 'Mật khẩu xác nhận không khớp!', type: 'error' });
-      return;
-    }
+
     setSavingPw(true);
     try {
       await authApi.changePassword(pwData);
-      setToast({ message: 'Đổi mật khẩu thành công!', type: 'success' });
+      notify.success('Đổi mật khẩu tài khoản thành công!', 'Thành công');
       setPwData({ current_password: '', password: '', password_confirmation: '' });
+      setPwErrors({});
     } catch (err) {
-      const msg =
-        err.response?.data?.errors?.current_password?.[0] ||
-        err.response?.data?.message ||
-        'Đổi mật khẩu thất bại!';
-      setToast({ message: msg, type: 'error' });
+      if (err.response?.data?.errors) {
+        setPwErrors(err.response.data.errors);
+      } else {
+        const msg = err.response?.data?.message || 'Đổi mật khẩu thất bại!';
+        notify.error(translateError(msg), 'Đổi mật khẩu thất bại');
+      }
     } finally {
       setSavingPw(false);
     }
@@ -211,7 +250,7 @@ const ProfilePage = () => {
             </div>
 
             {activeTab === 'profile' ? (
-              <form className={styles.card} onSubmit={handleSaveProfile}>
+              <form className={styles.card} onSubmit={handleSaveProfile} noValidate>
                 <div className={styles.cardHeader}>
                   <h3>Thông tin cá nhân</h3>
                   <p>Cập nhật họ tên và số điện thoại để chúng tôi liên hệ khi cần.</p>
@@ -234,7 +273,7 @@ const ProfilePage = () => {
                   </div>
 
                   <div className={styles.field}>
-                    <label htmlFor="name">Họ và tên</label>
+                    <label htmlFor="name">Họ và tên *</label>
                     <div className={styles.inputWrap}>
                       <MdPerson className={styles.inputIcon} />
                       <input
@@ -244,9 +283,10 @@ const ProfilePage = () => {
                         value={formData.name}
                         onChange={handleChange}
                         placeholder="Nhập họ và tên đầy đủ"
-                        required
+                        className={errors.name ? 'inputErrorGlobal' : ''}
                       />
                     </div>
+                    {errors.name && <span className="errorTextGlobal">{errors.name}</span>}
                   </div>
 
                   <div className={styles.field}>
@@ -260,8 +300,10 @@ const ProfilePage = () => {
                         value={formData.phone}
                         onChange={handleChange}
                         placeholder="Ví dụ: 0901234567"
+                        className={errors.phone ? 'inputErrorGlobal' : ''}
                       />
                     </div>
+                    {errors.phone && <span className="errorTextGlobal">{errors.phone}</span>}
                   </div>
                 </div>
 
@@ -272,7 +314,7 @@ const ProfilePage = () => {
                 </div>
               </form>
             ) : (
-              <form className={styles.card} onSubmit={handleChangePassword}>
+              <form className={styles.card} onSubmit={handleChangePassword} noValidate>
                 <div className={styles.cardHeader}>
                   <h3>Đổi mật khẩu</h3>
                   <p>
@@ -282,29 +324,32 @@ const ProfilePage = () => {
 
                 <div className={styles.formGrid}>
                   <PasswordField
-                    label="Mật khẩu hiện tại"
+                    label="Mật khẩu hiện tại *"
                     name="current_password"
                     value={pwData.current_password}
                     onChange={handlePwChange}
                     show={showPw.current}
                     onToggle={() => setShowPw((s) => ({ ...s, current: !s.current }))}
+                    error={pwErrors.current_password}
                   />
                   <PasswordField
-                    label="Mật khẩu mới"
+                    label="Mật khẩu mới *"
                     name="password"
                     value={pwData.password}
                     onChange={handlePwChange}
                     show={showPw.new}
                     onToggle={() => setShowPw((s) => ({ ...s, new: !s.new }))}
+                    error={pwErrors.password}
                     hint="Tối thiểu 6 ký tự."
                   />
                   <PasswordField
-                    label="Xác nhận mật khẩu mới"
+                    label="Xác nhận mật khẩu mới *"
                     name="password_confirmation"
                     value={pwData.password_confirmation}
                     onChange={handlePwChange}
                     show={showPw.confirm}
                     onToggle={() => setShowPw((s) => ({ ...s, confirm: !s.confirm }))}
+                    error={pwErrors.password_confirmation}
                   />
                 </div>
 
@@ -318,16 +363,12 @@ const ProfilePage = () => {
           </main>
         </div>
       </div>
-
-      {toast && (
-        <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />
-      )}
     </div>
   );
 };
 
 // ----- Sub-component -----
-const PasswordField = ({ label, name, value, onChange, show, onToggle, hint }) => (
+const PasswordField = ({ label, name, value, onChange, show, onToggle, hint, error }) => (
   <div className={styles.field}>
     <label htmlFor={name}>{label}</label>
     <div className={styles.inputWrap}>
@@ -339,13 +380,14 @@ const PasswordField = ({ label, name, value, onChange, show, onToggle, hint }) =
         value={value}
         onChange={onChange}
         placeholder="••••••••"
-        required
+        className={error ? 'inputErrorGlobal' : ''}
       />
       <button type="button" className={styles.toggleBtn} onClick={onToggle} tabIndex={-1}>
         {show ? <MdVisibilityOff /> : <MdVisibility />}
       </button>
     </div>
-    {hint && <p className={styles.hint}>{hint}</p>}
+    {error && <span className="errorTextGlobal">{error}</span>}
+    {hint && !error && <p className={styles.hint}>{hint}</p>}
   </div>
 );
 

@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import useAuthStore from '../../store/useAuthStore';
+import { notify, translateError } from '../../utils/notify';
 import styles from './Auth.module.scss';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [errors, setErrors] = useState({});
   const navigate = useNavigate();
   const location = useLocation();
   const { login, isLoading, error, clearError, isAuthenticated, user } = useAuthStore();
@@ -27,13 +29,48 @@ const LoginPage = () => {
     }
   }, [isAuthenticated, user, navigate, location]);
 
+  const handleEmailChange = (e) => {
+    setEmail(e.target.value);
+    setErrors(prev => ({ ...prev, email: '' }));
+    clearError();
+  };
+
+  const handlePasswordChange = (e) => {
+    setPassword(e.target.value);
+    setErrors(prev => ({ ...prev, password: '' }));
+    clearError();
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!email || !password) return;
+    
+    const newErrors = {};
+    if (!email.trim()) {
+      newErrors.email = 'Email không được để trống';
+    } else {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        newErrors.email = 'Địa chỉ email không đúng định dạng';
+      }
+    }
+
+    if (!password.trim()) {
+      newErrors.password = 'Mật khẩu không được để trống';
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
+    setErrors({});
 
     try {
       const res = await login({ email, password });
-      const role = res.data.user.role;
+      const loggedUser = res.data?.user || res.user;
+      notify.success(`Chào mừng ${loggedUser?.name || 'thành viên'} quay trở lại!`, 'Đăng nhập thành công');
+      
+      const role = loggedUser?.role;
       if (role === 'admin') {
         navigate('/admin', { replace: true });
       } else {
@@ -41,7 +78,9 @@ const LoginPage = () => {
         navigate(from, { replace: true });
       }
     } catch (err) {
-      // Lỗi đã được xử lý trong useAuthStore
+      // Nhận lỗi từ backend, dịch sang Tiếng Việt và bắn Toast lỗi
+      const backendError = err.response?.data?.errors || err.response?.data?.message || 'Email hoặc mật khẩu không chính xác.';
+      notify.error(translateError(backendError), 'Đăng nhập thất bại');
     }
   };
 
@@ -55,7 +94,7 @@ const LoginPage = () => {
             <p>Chào mừng bạn quay lại hệ thống rạp chiếu phim</p>
           </div>
 
-          <form onSubmit={handleSubmit} className={styles.authForm}>
+          <form onSubmit={handleSubmit} className={styles.authForm} noValidate>
 
             {error && <div className={styles.errorMsg}>{error}</div>}
 
@@ -65,10 +104,11 @@ const LoginPage = () => {
                 type="email"
                 id="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={handleEmailChange}
                 placeholder="Nhập địa chỉ email"
-                required
+                className={errors.email ? styles.inputError : ''}
               />
+              {errors.email && <span className={styles.errorText}>{errors.email}</span>}
             </div>
 
             <div className={styles.formGroup}>
@@ -77,10 +117,11 @@ const LoginPage = () => {
                 type="password"
                 id="password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={handlePasswordChange}
                 placeholder="Nhập mật khẩu"
-                required
+                className={errors.password ? styles.inputError : ''}
               />
+              {errors.password && <span className={styles.errorText}>{errors.password}</span>}
             </div>
 
             <div className={styles.formOptions}>
@@ -93,7 +134,7 @@ const LoginPage = () => {
             <button 
               type="submit" 
               className={styles.submitBtn}
-              disabled={isLoading || !email || !password}
+              disabled={isLoading}
             >
               {isLoading ? 'ĐANG XỬ LÝ...' : 'ĐĂNG NHẬP'}
             </button>

@@ -11,6 +11,7 @@ const CinemaManagePage = () => {
   const [cinemas, setCinemas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [errors, setErrors] = useState({});
   const [formData, setFormData] = useState({ name: '', address: '', city: '' });
 
   const fetchCinemas = async () => {
@@ -26,21 +27,30 @@ const CinemaManagePage = () => {
 
   useEffect(() => { fetchCinemas(); }, []);
 
-  const handleChange = (e) => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+  const handleChange = (e) => {
+    setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    setErrors(prev => ({ ...prev, [e.target.name]: '' }));
+  };
 
   const handleOpenModal = () => {
     setEditingCinema(null);
     setFormData({ name: '', address: '', city: '' });
+    setErrors({});
     setIsModalOpen(true);
   };
 
   const handleEdit = (cinema) => {
     setEditingCinema(cinema);
     setFormData({ name: cinema.name, address: cinema.address, city: cinema.city || '' });
+    setErrors({});
     setIsModalOpen(true);
   };
 
-  const handleCloseModal = () => { setIsModalOpen(false); setEditingCinema(null); };
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setEditingCinema(null);
+    setErrors({});
+  };
 
   const handleDelete = async (id) => {
     const ok = await confirmDialog({
@@ -61,10 +71,23 @@ const CinemaManagePage = () => {
   };
 
   const handleSave = async () => {
-    if (!formData.name?.trim() || !formData.address?.trim() || !formData.city?.trim()) {
-      notify.warning('Vui lòng nhập đầy đủ Tên rạp, Địa chỉ và Thành phố!');
+    const newErrors = {};
+    if (!formData.name?.trim()) {
+      newErrors.name = 'Vui lòng nhập tên rạp';
+    }
+    if (!formData.address?.trim()) {
+      newErrors.address = 'Vui lòng nhập địa chỉ';
+    }
+    if (!formData.city?.trim()) {
+      newErrors.city = 'Vui lòng nhập thành phố';
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
       return;
     }
+
+    setErrors({});
     setSaving(true);
     try {
       const payload = {
@@ -130,10 +153,22 @@ const CinemaManagePage = () => {
               <button className={styles.closeBtn} onClick={handleCloseModal}><MdClose /></button>
             </div>
             <div className={styles.modalBody}>
-              <form className={styles.form} onSubmit={e => e.preventDefault()}>
-                <div className={styles.formGroup}><label>Tên Rạp *</label><input type="text" name="name" value={formData.name} onChange={handleChange} placeholder="VD: T-CINE Landmark 81" /></div>
-                <div className={styles.formGroup}><label>Địa chỉ *</label><textarea rows="2" name="address" value={formData.address} onChange={handleChange} placeholder="Nhập địa chỉ đầy đủ"></textarea></div>
-                <div className={styles.formGroup}><label>Thành phố *</label><input type="text" name="city" value={formData.city} onChange={handleChange} placeholder="VD: Hà Nội" /></div>
+              <form className={styles.form} onSubmit={e => e.preventDefault()} noValidate>
+                <div className={styles.formGroup}>
+                  <label>Tên Rạp *</label>
+                  <input type="text" name="name" value={formData.name} onChange={handleChange} placeholder="VD: T-CINE Landmark 81" className={errors.name ? 'inputErrorGlobal' : ''} />
+                  {errors.name && <span className="errorTextGlobal">{errors.name}</span>}
+                </div>
+                <div className={styles.formGroup}>
+                  <label>Địa chỉ *</label>
+                  <textarea rows="2" name="address" value={formData.address} onChange={handleChange} placeholder="Nhập địa chỉ đầy đủ" className={errors.address ? 'inputErrorGlobal' : ''}></textarea>
+                  {errors.address && <span className="errorTextGlobal">{errors.address}</span>}
+                </div>
+                <div className={styles.formGroup}>
+                  <label>Thành phố *</label>
+                  <input type="text" name="city" value={formData.city} onChange={handleChange} placeholder="VD: Hà Nội" className={errors.city ? 'inputErrorGlobal' : ''} />
+                  {errors.city && <span className="errorTextGlobal">{errors.city}</span>}
+                </div>
               </form>
             </div>
             <div className={styles.modalFooter}>

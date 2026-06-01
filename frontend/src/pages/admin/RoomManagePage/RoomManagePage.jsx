@@ -31,6 +31,7 @@ const RoomManagePage = () => {
   const [saving, setSaving] = useState(false);
   const [editingRoom, setEditingRoom] = useState(null);
   const [formData, setFormData] = useState({ name: '', capacity: '' });
+  const [errors, setErrors] = useState({});
 
   // Seat state
   const [selectedRoomForSeat, setSelectedRoomForSeat] = useState(null);
@@ -43,6 +44,7 @@ const RoomManagePage = () => {
     coupleRowsInput: '',
   });
   const [generating, setGenerating] = useState(false);
+  const [seatErrors, setSeatErrors] = useState({});
 
   // ===== Cinemas =====
   const fetchCinemas = async () => {
@@ -77,21 +79,35 @@ const RoomManagePage = () => {
   useEffect(() => { if (selectedCinema) fetchRooms(selectedCinema); }, [selectedCinema]);
 
   // ===== Room CRUD =====
-  const handleChange = (e) => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+  const handleChange = (e) => {
+    setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    setErrors(prev => ({ ...prev, [e.target.name]: '' }));
+  };
+
+  const handleSeatGenChange = (field, val) => {
+    setSeatGenForm(p => ({ ...p, [field]: val }));
+    setSeatErrors(prev => ({ ...prev, [field]: '' }));
+  };
 
   const handleOpenModal = () => {
     setEditingRoom(null);
     setFormData({ name: '', capacity: '' });
+    setErrors({});
     setIsModalOpen(true);
   };
 
   const handleEdit = (room) => {
     setEditingRoom(room);
     setFormData({ name: room.name, capacity: room.capacity || '' });
+    setErrors({});
     setIsModalOpen(true);
   };
 
-  const handleCloseModal = () => { setIsModalOpen(false); setEditingRoom(null); };
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setEditingRoom(null);
+    setErrors({});
+  };
 
   const handleDelete = async (roomId) => {
     const ok = await confirmDialog({
@@ -112,13 +128,26 @@ const RoomManagePage = () => {
   };
 
   const handleSave = async () => {
-    if (!formData.name?.trim() || !formData.capacity) {
-      notify.warning('Vui lòng nhập tên và sức chứa!');
+    const newErrors = {};
+    if (!formData.name?.trim()) {
+      newErrors.name = 'Vui lòng nhập tên phòng chiếu';
+    }
+    
+    const capacityVal = formData.capacity ? parseInt(formData.capacity, 10) : NaN;
+    if (formData.capacity === '' || isNaN(capacityVal)) {
+      newErrors.capacity = 'Vui lòng nhập sức chứa';
+    } else if (capacityVal <= 0) {
+      newErrors.capacity = 'Sức chứa phải là số nguyên dương lớn hơn 0';
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
       return;
     }
+
     setSaving(true);
     try {
-      const payload = { name: formData.name.trim(), capacity: parseInt(formData.capacity, 10) };
+      const payload = { name: formData.name.trim(), capacity: capacityVal };
       if (editingRoom) {
         await cinemaApi.updateRoom(selectedCinema, editingRoom.id, payload);
         notify.success('Đã cập nhật phòng chiếu');
@@ -153,6 +182,13 @@ const RoomManagePage = () => {
 
   const handleOpenSeatModal = async (room) => {
     setSelectedRoomForSeat(room);
+    setSeatErrors({});
+    setSeatGenForm({
+      rows: 8,
+      columns: 10,
+      vipRowsInput: 'D,E,F',
+      coupleRowsInput: '',
+    });
     setIsSeatModalOpen(true);
     setSeats([]);
     await loadSeats(selectedCinema, room.id);
@@ -162,6 +198,7 @@ const RoomManagePage = () => {
     setIsSeatModalOpen(false);
     setSelectedRoomForSeat(null);
     setSeats([]);
+    setSeatErrors({});
     // Refresh rooms để cập nhật seats_count/capacity
     fetchRooms(selectedCinema);
   };
@@ -170,12 +207,22 @@ const RoomManagePage = () => {
     text.split(',').map(s => s.trim().toUpperCase()).filter(s => /^[A-Z]$/.test(s));
 
   const handleGenerateSeats = async () => {
+    const newSeatErrors = {};
     const rows = parseInt(seatGenForm.rows, 10);
     const columns = parseInt(seatGenForm.columns, 10);
-    if (!rows || rows < 1 || rows > 26 || !columns || columns < 1 || columns > 30) {
-      notify.warning('Vui lòng nhập số hàng (1-26) và số ghế / hàng (1-30) hợp lệ!');
+
+    if (isNaN(rows) || rows < 1 || rows > 26) {
+      newSeatErrors.rows = 'Số hàng phải từ 1 đến 26';
+    }
+    if (isNaN(columns) || columns < 1 || columns > 30) {
+      newSeatErrors.columns = 'Số ghế / hàng phải từ 1 đến 30';
+    }
+
+    if (Object.keys(newSeatErrors).length > 0) {
+      setSeatErrors(newSeatErrors);
       return;
     }
+
     const capacity = Number(selectedRoomForSeat?.capacity || 0);
     if (capacity <= 0) {
       notify.warning('Phòng chưa có sức chứa. Hãy bấm "Sửa" để nhập sức chứa trước khi tạo sơ đồ ghế.');
@@ -184,6 +231,31 @@ const RoomManagePage = () => {
 
     const vipRows = parseRows(seatGenForm.vipRowsInput);
     const coupleRows = parseRows(seatGenForm.coupleRowsInput);
+
+    // Kiểm tra hàng VIP trùng hàng Ghế Đôi
+    const overlaps = vipRows.filter(r => coupleRows.includes(r));
+    if (overlaps.length > 0) {
+      newSeatErrors.vipRowsInput = `Hàng ${overlaps.join(', ')} không thể vừa là VIP vừa là Ghế Đôi`;
+      newSeatErrors.coupleRowsInput = `Hàng ${overlaps.join(', ')} không thể vừa là VIP vừa là Ghế Đôi`;
+      setSeatErrors(newSeatErrors);
+      return;
+    }
+
+    // Kiểm tra hàng VIP/Ghế Đôi vượt số hàng
+    const invalidVip = vipRows.filter(r => r.charCodeAt(0) - 65 >= rows);
+    if (invalidVip.length > 0) {
+      newSeatErrors.vipRowsInput = `Hàng VIP (${invalidVip.join(', ')}) vượt quá tổng số hàng (${rows})`;
+    }
+
+    const invalidCouple = coupleRows.filter(r => r.charCodeAt(0) - 65 >= rows);
+    if (invalidCouple.length > 0) {
+      newSeatErrors.coupleRowsInput = `Hàng ghế đôi (${invalidCouple.join(', ')}) vượt quá tổng số hàng (${rows})`;
+    }
+
+    if (Object.keys(newSeatErrors).length > 0) {
+      setSeatErrors(newSeatErrors);
+      return;
+    }
 
     // Hàng đôi chỉ có floor(columns/2) ghế (vì mỗi ghế rộng = 2 ghế thường)
     const coupleRowsInRange = coupleRows.filter((r) => r.charCodeAt(0) - 65 < rows).length;
@@ -322,16 +394,21 @@ const RoomManagePage = () => {
               <button className={styles.closeBtn} onClick={handleCloseModal}><MdClose /></button>
             </div>
             <div className={styles.modalBody}>
-              <form className={styles.form} onSubmit={e => e.preventDefault()}>
+              <form className={styles.form} onSubmit={e => e.preventDefault()} noValidate>
                 <div className={styles.formGroup}>
                   <label>Trực thuộc Rạp</label>
                   <input type="text" value={cinemaName} disabled />
                 </div>
                 <div className={styles.formRow}>
-                  <div className={styles.formGroup}><label>Tên Phòng *</label><input type="text" name="name" value={formData.name} onChange={handleChange} placeholder="VD: Phòng 1" /></div>
+                  <div className={styles.formGroup}>
+                    <label>Tên Phòng *</label>
+                    <input type="text" name="name" value={formData.name} onChange={handleChange} placeholder="VD: Phòng 1" className={errors.name ? 'inputErrorGlobal' : ''} />
+                    {errors.name && <span className="errorTextGlobal">{errors.name}</span>}
+                  </div>
                   <div className={styles.formGroup}>
                     <label>Sức chứa (ghế) *</label>
-                    <input type="number" name="capacity" value={formData.capacity} onChange={handleChange} placeholder="120" />
+                    <input type="number" name="capacity" value={formData.capacity} onChange={handleChange} placeholder="120" className={errors.capacity ? 'inputErrorGlobal' : ''} />
+                    {errors.capacity && <span className="errorTextGlobal">{errors.capacity}</span>}
                     <span className={styles.helperText}>Sẽ tự cập nhật khi bạn tạo sơ đồ ghế</span>
                   </div>
                 </div>
@@ -367,12 +444,14 @@ const RoomManagePage = () => {
                   <div className={styles.formGroup}>
                     <label>Số hàng (1-26)</label>
                     <input type="number" min="1" max="26" value={seatGenForm.rows}
-                      onChange={(e) => setSeatGenForm(p => ({ ...p, rows: e.target.value }))} />
+                      onChange={(e) => handleSeatGenChange('rows', e.target.value)} className={seatErrors.rows ? 'inputErrorGlobal' : ''} />
+                    {seatErrors.rows && <span className="errorTextGlobal">{seatErrors.rows}</span>}
                   </div>
                   <div className={styles.formGroup}>
                     <label>Số ghế / hàng (1-30)</label>
                     <input type="number" min="1" max="30" value={seatGenForm.columns}
-                      onChange={(e) => setSeatGenForm(p => ({ ...p, columns: e.target.value }))} />
+                      onChange={(e) => handleSeatGenChange('columns', e.target.value)} className={seatErrors.columns ? 'inputErrorGlobal' : ''} />
+                    {seatErrors.columns && <span className="errorTextGlobal">{seatErrors.columns}</span>}
                   </div>
                   <div className={styles.formGroup}>
                     <label>Tổng ghế / Chỗ ngồi (Ghế đôi = 2 chỗ)</label>
@@ -399,13 +478,15 @@ const RoomManagePage = () => {
                     <label>Hàng VIP (cách nhau bởi dấu phẩy)</label>
                     <input type="text" placeholder="VD: D,E,F"
                       value={seatGenForm.vipRowsInput}
-                      onChange={(e) => setSeatGenForm(p => ({ ...p, vipRowsInput: e.target.value }))} />
+                      onChange={(e) => handleSeatGenChange('vipRowsInput', e.target.value)} className={seatErrors.vipRowsInput ? 'inputErrorGlobal' : ''} />
+                    {seatErrors.vipRowsInput && <span className="errorTextGlobal">{seatErrors.vipRowsInput}</span>}
                   </div>
                   <div className={styles.formGroup}>
                     <label>Hàng Ghế Đôi</label>
                     <input type="text" placeholder="VD: H"
                       value={seatGenForm.coupleRowsInput}
-                      onChange={(e) => setSeatGenForm(p => ({ ...p, coupleRowsInput: e.target.value }))} />
+                      onChange={(e) => handleSeatGenChange('coupleRowsInput', e.target.value)} className={seatErrors.coupleRowsInput ? 'inputErrorGlobal' : ''} />
+                    {seatErrors.coupleRowsInput && <span className="errorTextGlobal">{seatErrors.coupleRowsInput}</span>}
                   </div>
                 </div>
                 <div className={styles.seatActions}>

@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { MdAdd, MdEdit, MdDelete, MdClose, MdCloudUpload } from 'react-icons/md';
 import comboApi from '../../../api/comboApi';
 import axiosClient from '../../../api/axiosClient';
-import Toast from '../../../components/Toast/Toast';
+import { notify, confirmDialog } from '../../../utils/notify';
 import styles from './ComboManagePage.module.scss';
 
 const STORAGE_URL = import.meta.env.VITE_STORAGE_URL || 'http://localhost:8000/storage';
@@ -19,6 +19,7 @@ const ComboManagePage = () => {
   const [combos, setCombos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [errors, setErrors] = useState({});
 
   const [previewImage, setPreviewImage] = useState(null);
   const [imageFile, setImageFile] = useState(null);
@@ -29,11 +30,7 @@ const ComboManagePage = () => {
     price: '',
   });
 
-  const [toast, setToast] = useState({ message: '', type: 'success' });
   const imageInputRef = useRef(null);
-
-  const showToast = (message, type = 'success') => setToast({ message, type });
-  const closeToast = () => setToast({ message: '', type: 'success' });
 
   const fetchCombos = async () => {
     setLoading(true);
@@ -42,7 +39,7 @@ const ComboManagePage = () => {
       setCombos(res.data || []);
     } catch (error) {
       console.error('Lỗi tải combo:', error);
-      showToast('Không tải được danh sách combo!', 'error');
+      notify.error('Không tải được danh sách combo!', 'Lỗi tải dữ liệu');
     } finally {
       setLoading(false);
     }
@@ -65,6 +62,7 @@ const ComboManagePage = () => {
     setFormData({ name: '', description: '', price: '' });
     setPreviewImage(null);
     setImageFile(null);
+    setErrors({});
     setIsModalOpen(true);
   };
 
@@ -77,6 +75,7 @@ const ComboManagePage = () => {
     });
     setPreviewImage(getImageUrl(combo.image));
     setImageFile(null);
+    setErrors({});
     setIsModalOpen(true);
   };
 
@@ -85,10 +84,12 @@ const ComboManagePage = () => {
     setEditingCombo(null);
     setPreviewImage(null);
     setImageFile(null);
+    setErrors({});
   };
 
   const handleChange = (e) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    setErrors(prev => ({ ...prev, [e.target.name]: '' }));
   };
 
   const handleImageUpload = (e) => {
@@ -102,26 +103,40 @@ const ComboManagePage = () => {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Bạn có chắc muốn xóa combo này?')) return;
+    const ok = await confirmDialog({
+      title: 'Xóa combo bắp nước?',
+      message: 'Bạn có chắc chắn muốn xóa combo này không? Hành động này không thể hoàn tác.',
+      confirmText: 'Xóa combo',
+      danger: true,
+    });
+    if (!ok) return;
+
     try {
       await comboApi.delete(id);
-      showToast('Đã xóa combo!', 'success');
+      notify.success('Đã xóa combo bắp nước thành công!', 'Thành công');
       fetchCombos();
     } catch {
-      showToast('Xóa combo thất bại!', 'error');
+      notify.error('Xóa combo bắp nước thất bại!', 'Lỗi');
     }
   };
 
   const handleSave = async () => {
-    if (!formData.name || !formData.price) {
-      showToast('Vui lòng nhập tên và giá combo!', 'error');
-      return;
+    const newErrors = {};
+    if (!formData.name.trim()) {
+      newErrors.name = 'Vui lòng nhập tên combo';
     }
-    if (Number(formData.price) < 0) {
-      showToast('Giá combo phải lớn hơn 0!', 'error');
+    if (!formData.price) {
+      newErrors.price = 'Vui lòng nhập giá combo';
+    } else if (Number(formData.price) < 0) {
+      newErrors.price = 'Giá combo phải lớn hơn hoặc bằng 0';
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
       return;
     }
 
+    setErrors({});
     setSaving(true);
     try {
       let imageUrl = editingCombo?.image || '';
@@ -136,17 +151,17 @@ const ComboManagePage = () => {
 
       if (editingCombo) {
         await comboApi.update(editingCombo.id, payload);
-        showToast('Đã cập nhật combo!', 'success');
+        notify.success('Đã cập nhật thông tin combo thành công!', 'Thành công');
       } else {
         await comboApi.create(payload);
-        showToast('Đã thêm combo mới!', 'success');
+        notify.success('Đã thêm combo bắp nước mới thành công!', 'Thành công');
       }
 
       handleCloseModal();
       fetchCombos();
     } catch (error) {
       console.error('Lỗi lưu combo:', error);
-      showToast('Lưu combo thất bại! ' + (error.response?.data?.message || ''), 'error');
+      notify.error('Lưu combo thất bại! ' + (error.response?.data?.message || ''), 'Lỗi');
     } finally {
       setSaving(false);
     }
@@ -216,7 +231,7 @@ const ComboManagePage = () => {
             </div>
 
             <div className={styles.modalBody}>
-              <form className={styles.form} onSubmit={(e) => e.preventDefault()}>
+              <form className={styles.form} onSubmit={(e) => e.preventDefault()} noValidate>
                 <div className={styles.formRow}>
                   <div className={styles.formGroup} style={{ flex: 2 }}>
                     <label>Tên combo *</label>
@@ -224,7 +239,9 @@ const ComboManagePage = () => {
                       type="text" name="name"
                       value={formData.name} onChange={handleChange}
                       placeholder="VD: Combo Đôi - 2 nước + 1 bắp lớn"
+                      className={errors.name ? 'inputErrorGlobal' : ''}
                     />
+                    {errors.name && <span className="errorTextGlobal">{errors.name}</span>}
                   </div>
                   <div className={styles.formGroup} style={{ flex: 1 }}>
                     <label>Giá (VNĐ) *</label>
@@ -232,7 +249,9 @@ const ComboManagePage = () => {
                       type="number" name="price"
                       value={formData.price} onChange={handleChange}
                       placeholder="109000" min="0" step="1000"
+                      className={errors.price ? 'inputErrorGlobal' : ''}
                     />
+                    {errors.price && <span className="errorTextGlobal">{errors.price}</span>}
                   </div>
                 </div>
 
@@ -280,8 +299,6 @@ const ComboManagePage = () => {
           </div>
         </div>
       )}
-
-      <Toast message={toast.message} type={toast.type} onClose={closeToast} />
     </div>
   );
 };

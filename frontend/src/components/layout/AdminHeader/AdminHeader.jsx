@@ -2,17 +2,16 @@ import React, { useState } from 'react';
 import { MdNotifications, MdAccountCircle, MdLogout } from 'react-icons/md';
 import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../../../store/useAuthStore';
-import Toast from '../../Toast/Toast';
+import { notify } from '../../../utils/notify';
 import styles from './AdminHeader.module.scss';
 
 const AdminHeader = () => {
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
-  const [toast, setToast] = useState(null);
 
   const handleLogout = async () => {
     await logout();
-    setToast({ message: 'Đăng xuất thành công!', type: 'success' });
+    notify.success('Đăng xuất thành công!', 'Tạm biệt');
     setTimeout(() => navigate('/dang-nhap'), 1500);
   };
 
@@ -43,7 +42,6 @@ const AdminHeader = () => {
       </div>
     </header>
 
-    {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
     </>
   );
 };

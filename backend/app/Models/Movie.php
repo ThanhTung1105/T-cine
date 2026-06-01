@@ -24,6 +24,7 @@ class Movie extends Model
         'rating',
         'release_date',
         'status',
+        'is_featured',
     ];
 
     public function showtimes()

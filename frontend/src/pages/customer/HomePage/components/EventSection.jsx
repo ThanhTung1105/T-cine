@@ -13,7 +13,6 @@ const STORAGE_URL = import.meta.env.VITE_STORAGE_URL || 'http://localhost:8000/s
 
 const TABS = [
   { id: 'promotion', label: 'Ưu Đãi' },
-  { id: 'member', label: 'Thành Viên' },
   { id: 'news', label: 'Tin Tức' },
 ];
 
@@ -42,7 +41,31 @@ const EventSection = () => {
       try {
         setLoading(true);
         const res = await eventApi.getAll({ category: activeTab });
-        setEvents(res.data || res);
+        const allEvents = Array.isArray(res) ? res : res.data || [];
+        
+        // Lọc các sự kiện nổi bật thuộc danh mục hiện tại
+        const featured = allEvents.filter(
+          (e) => e.is_featured === 1 || e.is_featured === true || e.is_featured === '1'
+        );
+        
+        let selectedEvents = [];
+        if (featured.length > 0) {
+          const featuredSlice = featured.slice(0, 4);
+          selectedEvents = [...featuredSlice];
+          
+          // Điền đầy đủ 4 card bằng các sự kiện thường của cùng danh mục
+          if (selectedEvents.length < 4) {
+            const remainingCount = 4 - selectedEvents.length;
+            const featuredIds = featuredSlice.map(e => e.id);
+            const otherEvents = allEvents.filter(e => !featuredIds.includes(e.id));
+            selectedEvents = [...selectedEvents, ...otherEvents.slice(0, remainingCount)];
+          }
+        } else {
+          // Fallback: Nếu không chọn sự kiện nổi bật nào, hiển thị 4 sự kiện mới nhất
+          selectedEvents = allEvents.slice(0, 4);
+        }
+        
+        setEvents(selectedEvents);
       } catch (err) {
         console.error('Lỗi tải sự kiện:', err);
       } finally {

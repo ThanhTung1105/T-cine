@@ -18,6 +18,11 @@ class BookingController extends Controller
      */
     public function store(Request $request)
     {
+        // Tự động hủy các đơn hàng chờ thanh toán đã quá 5 phút
+        Booking::where('status', 'pending')
+            ->where('created_at', '<', now()->subMinutes(5))
+            ->update(['status' => 'cancelled']);
+
         $request->validate([
             'showtime_id' => 'required|exists:showtimes,id',
             'seat_ids' => 'required|array|min:1',
@@ -134,6 +139,11 @@ class BookingController extends Controller
      */
     public function myBookings(Request $request)
     {
+        // Tự động hủy các đơn hàng chờ thanh toán đã quá 5 phút
+        Booking::where('status', 'pending')
+            ->where('created_at', '<', now()->subMinutes(5))
+            ->update(['status' => 'cancelled']);
+
         $bookings = Booking::where('user_id', $request->user()->id)
             ->with(['showtime.movie', 'showtime.room.cinema', 'tickets', 'bookingCombos.combo', 'payment'])
             ->orderBy('created_at', 'desc')

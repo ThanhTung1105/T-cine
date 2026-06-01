@@ -17,7 +17,32 @@ const MovieSelection = () => {
     const fetchMovies = async () => {
       try {
         const res = await movieApi.getNowShowing();
-        setMovies((res.data || []).slice(0, 8));
+        const allMovies = res.data || [];
+        
+        // 1. Lọc các phim được đánh dấu nổi bật ở Trang chủ
+        const featured = allMovies.filter(
+          (m) => m.is_featured === 1 || m.is_featured === true || m.is_featured === '1'
+        );
+        
+        let selectedMovies = [];
+        if (featured.length > 0) {
+          // Lấy tối đa 4 phim nổi bật
+          const featuredSlice = featured.slice(0, 4);
+          selectedMovies = [...featuredSlice];
+          
+          // Nếu admin chọn ít hơn 4 phim nổi bật (ví dụ 1 hoặc 2), tự động điền thêm các phim đang chiếu khác cho đủ 4 card
+          if (selectedMovies.length < 4) {
+            const remainingCount = 4 - selectedMovies.length;
+            const featuredIds = featuredSlice.map(m => m.id);
+            const otherMovies = allMovies.filter(m => !featuredIds.includes(m.id));
+            selectedMovies = [...selectedMovies, ...otherMovies.slice(0, remainingCount)];
+          }
+        } else {
+          // Fallback: nếu không chọn phim nào, lấy 4 phim mới nhất đang chiếu
+          selectedMovies = allMovies.slice(0, 4);
+        }
+        
+        setMovies(selectedMovies);
       } catch (error) {
         console.error('Lỗi tải danh sách phim:', error);
         setMovies([]);

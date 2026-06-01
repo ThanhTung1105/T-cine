@@ -120,3 +120,23 @@ h1, h2, h3, h4, h5, h6 {
   color: $text-primary !important;
   border-radius: $radius-md !important;
 }
+
+// --- Global Form Validation Utilities ---
+.errorTextGlobal {
+  color: #ef4444 !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  display: block !important;
+  margin-top: 5px !important;
+  text-align: left !important;
+}
+
+.inputErrorGlobal {
+  border-color: #ef4444 !important;
+  background-color: #fffafb !important;
+  
+  &:focus {
+    box-shadow: 0 0 0 2px rgba(#ef4444, 0.1) !important;
+  }
+}
+

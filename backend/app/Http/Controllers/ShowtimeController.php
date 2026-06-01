@@ -54,6 +54,11 @@ class ShowtimeController extends Controller
      */
     public function show($id)
     {
+        // Tự động hủy các đơn hàng chờ thanh toán đã quá 5 phút
+        \App\Models\Booking::where('status', 'pending')
+            ->where('created_at', '<', now()->subMinutes(5))
+            ->update(['status' => 'cancelled']);
+
         $showtime = Showtime::with(['movie', 'room.cinema', 'room.seats'])
             ->findOrFail($id);
 

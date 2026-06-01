@@ -101,8 +101,11 @@ class AuthController extends Controller
         $user = $request->user();
 
         $request->validate([
-            'name' => 'sometimes|string|max:255',
-            'phone' => 'nullable|string|max:20',
+            'name' => 'required|string|max:255',
+            'phone' => 'nullable|string|regex:/^[0-9]{10,11}$/',
+        ], [
+            'name.required' => 'Họ và tên không được để trống.',
+            'phone.regex' => 'Số điện thoại phải từ 10 đến 11 số.',
         ]);
 
         $user->update($request->only(['name', 'phone']));
@@ -122,13 +125,24 @@ class AuthController extends Controller
         $request->validate([
             'current_password' => 'required|string',
             'password' => 'required|string|min:6|confirmed',
+        ], [
+            'current_password.required' => 'Mật khẩu hiện tại không được để trống.',
+            'password.required' => 'Mật khẩu mới không được để trống.',
+            'password.min' => 'Mật khẩu mới phải từ 6 ký tự trở lên.',
+            'password.confirmed' => 'Mật khẩu xác nhận không khớp.',
         ]);
 
         $user = $request->user();
 
         if (!Hash::check($request->current_password, $user->password)) {
             throw ValidationException::withMessages([
-                'current_password' => ['Mật khẩu hiện tại không đúng.'],
+                'current_password' => ['Mật khẩu hiện tại không chính xác.'],
+            ]);
+        }
+
+        if ($request->current_password === $request->password) {
+            throw ValidationException::withMessages([
+                'password' => ['Mật khẩu mới không được giống mật khẩu hiện tại.'],
             ]);
         }
 

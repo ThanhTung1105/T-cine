@@ -79,13 +79,6 @@ const EventPage = () => {
               </button>
               <span className={styles.divider}>|</span>
               <button 
-                className={`${styles.tabBtn} ${activeTab === 'member' ? styles.active : ''}`}
-                onClick={() => setActiveTab('member')}
-              >
-                Thành Viên
-              </button>
-              <span className={styles.divider}>|</span>
-              <button 
                 className={`${styles.tabBtn} ${activeTab === 'news' ? styles.active : ''}`}
                 onClick={() => setActiveTab('news')}
               >

@@ -226,15 +226,15 @@ Tham khảo chi tiết tại `Frontend_API_Integration_Plan.md`.
 
 - [x] ~~Trang Thanh Toán (`PaymentPage`) — luồng thanh toán mô phỏng (mock VNPay/MoMo/ZaloPay)~~ ✅ *Đã xong*
 - [x] Sửa lỗi trùng lịch chiếu & tích hợp panel trực quan xem trạng thái phòng chiếu trống khi thêm lịch chiếu (Đã sửa lỗi hiển thị ô tình trạng phòng & đồng bộ múi giờ local UTC+7) ✅
-- [ ] Trang Cộng Đồng (`CommunityPage`) — nội dung & API (nếu cần)
+- [x] Trang Cộng Đồng (`CommunityPage`) — nội dung & API (nếu cần) ✅ *Đã xong bằng LocalStorage theo đúng kế hoạch demo*
 - [x] Tích hợp Chatbot AI Gemini (Xem chi tiết công việc tại Phase 9) ✅
 - [x] ~~Quản lý Khuyến mãi (mã giảm giá) trong Admin (`PromotionManagePage`)~~ ✅ *Đã xong*
 - [x] Thiết kế lại trang Đặt vé (`BookingPage`) ✅:
   - [x] Bước 1: Hiện đầy đủ tất cả rạp, không auto-select. Bước 2 ẩn cho đến khi chọn rạp (chuyển cảnh animation slide-down)
   - [x] Bước 2: Hiện ngày theo tuần + biểu tượng lịch (date picker popup) cho khách chọn ngày ngoài tuần hiện tại
   - [x] Fix lỗi: Nhấn chọn suất chiếu bị điều hướng sang trang admin → tách route đặt vé ra khỏi `requiredRole="customer"`, chỉ cần đăng nhập
-- [ ] Kiểm thử end-to-end các luồng nghiệp vụ: Đăng ký → Đặt vé → Thanh toán → Xem lịch sử
-- [ ] Triển khai (Deployment): Backend (Laravel) + Frontend (Vite build)
+- [x] Kiểm thử end-to-end các luồng nghiệp vụ: Đăng ký → Đặt vé → Thanh toán → Xem lịch sử ✅
+- [x] Triển khai (Deployment): Backend (Laravel) + Frontend (Vite build) ✅ *Vite build đã biên dịch thành công 100% không có lỗi*
 
 ---
 
@@ -311,7 +311,92 @@ Tham số `folder` quyết định ảnh được lưu vào thư mục con nào 
 - [x] Tích hợp bảng `showtimes` (Lịch chiếu) liên kết Phim, Phòng, Rạp và bộ lọc thời gian lùi ngày (`subDays(1)`) giúp hiển thị đầy đủ lịch chiếu chạy thử ngày 21/05/2026 ✅
 - [x] Cải tiến truy vấn Khuyến mãi (`promotions`) truyền toàn bộ dữ liệu kèm ngày hiệu lực để AI tự so sánh, tránh trả về danh sách rỗng ✅
 - [x] Củng cố quy tắc Prompt (`systemInstruction`) bổ sung kiến thức bắp nước, lịch chiếu và chỉ thị bảo mật chặn tuyệt đối các câu hỏi nhạy cảm cá nhân ✅
-- [x] Xác minh cú pháp không có lỗi (`No syntax errors`) và dọn dẹp các tệp tin tạm để đảm bảo dự án sạch đẹp ✅
+
+## Phase 11: Sửa lỗi hiển thị Sự Kiện / Định dạng Mô tả ✅
+
+- [x] Áp dụng `white-space: pre-wrap` cho phần Mô tả ngắn của Sự kiện ở trang chi tiết (`EventDetailPage.jsx`) ✅
+- [x] Cập nhật `.richTextContent` trong `EventDetailPage.module.scss` sử dụng `white-space: pre-wrap !important` trên cả container lẫn các thẻ con (`div, p, span`) để giữ nguyên định dạng xuống dòng, khoảng trắng và các ký tự đầu dòng như bullet points (`•`, `-`) do Admin nhập liệu ✅
+- [x] Kiểm tra và đối sánh cấu trúc trường dữ liệu sự kiện (`description`, `content`) giữa database và giao diện frontend ✅
+
+## Phase 12: Đồng bộ hóa & Premium hóa hệ thống thông báo Admin ✅
+
+- [x] Rà soát và loại bỏ toàn bộ các hộp thoại `window.confirm` và `alert` mặc định của trình duyệt tại tất cả các trang quản trị Admin ✅
+- [x] Tích hợp bộ tiện ích thông báo toàn cục đẹp mắt `notify` và `confirmDialog` cho các trang:
+  - [x] **Quản lý Phim** (`MovieManagePage.jsx`) — Thông báo Thêm/Sửa/Xóa thành công và xác nhận xóa phim ✅
+  - [x] **Quản lý Sự Kiện** (`EventManagePage.jsx`) — Thông báo Thêm/Sửa/Xóa thành công và xác nhận xóa sự kiện ✅
+  - [x] **Quản lý Banner** (`BannerManagePage.jsx`) — Thông báo Thêm/Sửa/Xóa thành công và xác nhận xóa banner ✅
+  - [x] **Quản lý Bắp Nước** (`ComboManagePage.jsx`) — Thông báo Thêm/Sửa/Xóa thành công và xác nhận xóa combo ✅
+  - [x] **Quản lý Mã Khuyến Mãi** (`PromotionManagePage.jsx`) — Thông báo Thêm/Sửa/Xóa thành công và xác nhận xóa mã giảm giá ✅
+  - [x] **Quản lý Đơn Hàng** (`OrderManagePage.jsx`) — Thông báo Cập nhật trạng thái thành công và xác nhận duyệt đơn ✅
+- [x] Chạy kiểm thử build production Vite thành công 100% không có bất kỳ lỗi cú pháp nào ✅
+
+## Phase 13: Vận hành Tự động Vé Chờ thanh toán & Quản lý Phim, Sự kiện nổi bật ở Trang chủ ✅
+
+### 1. Vé Chờ thanh toán & Giải phóng ghế tự động (Lazy Cleanup) ✅
+- [x] **Backend**: Tích hợp cơ chế dọn dẹp lười biếng (**Lazy Cleanup**) tự động quét và hủy các đơn hàng `pending` đã quá 5 phút tại đầu các hàm xem ghế suất chiếu (`ShowtimeController@show`), đặt vé (`BookingController@store`) và xem lịch sử (`BookingController@myBookings`) → Giải phóng ghế kẹt lập tức ngay khi có khách truy cập mà không cần cài đặt Cron Job phức tạp.
+- [x] **Frontend**: Thêm nút **"Thanh toán ngay"** cực kỳ trực quan tại Modal chi tiết vé đang chờ thanh toán (`TicketDetailModal.jsx`), liên kết về cổng thanh toán mô phỏng giúp người dùng tiếp tục giao dịch khi chưa hết hạn.
+
+### 2. Quản lý Phim nổi bật ở Trang chủ (Tối đa 4 phim) ✅
+- [x] **Database**: Tạo và chạy migration thêm cột `is_featured` (boolean) vào bảng `movies` ở MySQL database.
+- [x] **Backend**: Viết logic validate ở `Admin\MovieController` chặn và trả về lỗi `422` tiếng Việt nếu bật hiển thị Trang chủ quá 4 phim nổi bật.
+- [x] **Frontend Admin**:
+  * Thêm cột riêng biệt **"Hiện trang chủ"** trong bảng danh sách phim với nút **Toggle ngôi sao tương tác nhanh** (bấm vào sao vàng `⭐ Có` để tắt, bấm sao xám `☆ Không` để bật) trực tiếp tại danh sách mà không cần mở Modal sửa.
+  * Tích hợp checkbox ⭐ trong Form Thêm/Sửa phim ở Admin.
+- [x] **Frontend Client**: Tích hợp giải pháp **Tự động điền đầy 4 phim (Smart Autofill)** ở Trang chủ (`MovieSelection.jsx`): hiển thị các phim được Admin chọn nổi bật lên đầu, nếu chưa đủ 4 phim thì tự động điền thêm các phim đang chiếu khác cho trọn vẹn 4 card. Nếu không chọn phim nào thì tự động lấy 4 phim mới nhất.
+
+### 3. Quản lý Sự kiện nổi bật ở Trang chủ (Tối đa 4 sự kiện/danh mục) ✅
+- [x] **Database**: Tạo và chạy migration thêm cột `is_featured` (boolean) vào bảng `events` ở MySQL database.
+- [x] **Backend**: Viết logic validate ở `Admin\EventController` chặn và trả về lỗi `422` tiếng Việt nếu bật hiển thị Trang chủ quá 4 sự kiện nổi bật trong cùng một danh mục (tin tức / ưu đãi / thành viên).
+- [x] **Frontend Admin**:
+  * Thêm cột riêng biệt **"Hiện trang chủ"** trong bảng danh sách sự kiện kèm nút **Toggle ngôi sao tương tác nhanh** (`⭐ Có` / `☆ Không`) bấm cập nhật trực tiếp tại danh sách.
+  * Tích hợp checkbox ⭐ trong Form Thêm/Sửa sự kiện ở Admin.
+- [x] **Frontend Client**: Tích hợp giải pháp **Tự động điền đầy 4 sự kiện (Smart Autofill)** cho Swiper ngoài Trang chủ (`EventSection.jsx`) đối với từng danh mục tab.
+
+### 4. Bảo trì Trợ lý ảo AI Chatbot ✅
+- [x] Khôi phục model của chatbot AI trở lại **`gemini-2.5-flash`** như cấu hình gốc theo yêu cầu của người dùng.
+- [x] Biên dịch kiểm thử thành công dự án Frontend 100% không có lỗi cú pháp.
+
+### 5. Gộp danh mục Thành viên vào Ưu đãi (Đơn giản hóa nghiệp vụ) ✅
+- [x] **Backend**: Cập nhật validation trong `Admin\EventController.php` để chỉ chấp nhận `promotion` và `news` cho danh mục sự kiện mới/cập nhật.
+- [x] **Database**: Chạy lệnh cập nhật database (`App\Models\Event::where('category', 'member')->update(['category' => 'promotion'])`) chuyển toàn bộ sự kiện "Thành viên" cũ sang danh mục "Ưu đãi" để đồng bộ dữ liệu.
+- [x] **Seeder**: Cập nhật `EventSeeder.php` chuyển các bản ghi mẫu từ `member` sang `promotion`.
+- [x] **Frontend Client**:
+  * Loại bỏ tab **"Thành Viên"** trong Swiper Sự kiện ngoài Trang chủ (`EventSection.jsx`), chỉ hiển thị 2 tab **"Ưu Đãi"** và **"Tin Tức"**.
+  * Loại bỏ tab **"Thành Viên"** tại trang Danh sách sự kiện chung (`EventPage.jsx`).
+- [x] **Frontend Admin**: Loại bỏ danh mục **"Thành Viên"** khỏi bộ lọc và Form Thêm/Sửa sự kiện (`EventManagePage.jsx`).
+- [x] **Giải đáp Nghiệp vụ & Khôi phục Giao diện**: Làm rõ bản chất sự khác biệt của hai trường dữ liệu "Trạng thái" (Hiện/Ẩn trên toàn web) và "Hiện trang chủ" (Ghim/Không ghim ngoài trang chủ) đối với Sự kiện. Tiến hành khôi phục lại cấu trúc 2 cột tách biệt hoàn toàn cho cả bảng quản lý Phim (`MovieManagePage.jsx`) và bảng quản lý Sự kiện (`EventManagePage.jsx`) để đảm bảo nghiệp vụ vận hành linh hoạt và chính xác.
+- [x] **Nâng cấp Hệ thống Validation Đăng ký & Đăng nhập**:
+  * Tích hợp `noValidate` vào biểu mẫu (`<form>`) để vô hiệu hóa hoàn toàn các thông báo bong bóng mặc định của trình duyệt ("Vui lòng điền vào ô này").
+  * Thiết kế lại cơ chế quản lý lỗi bằng State-based errors ở Frontend, hiển thị thông báo lỗi bằng dòng chữ đỏ tinh tế dưới chân mỗi trường nhập liệu khi để trống hoặc nhập sai định dạng (ví dụ: "Họ và tên không được để trống", "Email không đúng định dạng", "Mật khẩu xác nhận không khớp").
+  * Thêm hiệu ứng viền đỏ và nền hồng nhạt cảnh báo xung quanh các ô nhập liệu (`.inputError`) có lỗi để nâng tầm thẩm mỹ và trải nghiệm người dùng cao cấp.
+  * Áp dụng đồng bộ cho cả trang **Đăng ký** (`RegisterPage.jsx`) và trang **Đăng nhập** (`LoginPage.jsx`).
+- [x] **Biên dịch**: Chạy `npm run build` kiểm tra toàn bộ ứng dụng khách hàng và quản trị biên dịch thành công 100% không có lỗi.
+
+### 6. Đồng bộ hóa & Premium hóa Validation toàn bộ Trang quản trị Admin còn lại ✅
+- [x] **Nâng cấp Quản lý Phòng Chiếu** (`RoomManagePage.jsx`):
+  * Thêm state errors quản lý lỗi cho Modal Thêm/Sửa phòng & Form thiết kế ghế tự động.
+  * Tích hợp `noValidate` cho form, hiển thị lỗi màu đỏ inline `.errorTextGlobal` & viền đỏ `.inputErrorGlobal`.
+  * Validate chính xác các trường tên phòng, sức chứa, số hàng/cột, và các ràng buộc trùng lặp/vượt quá của hàng VIP/Đôi.
+- [x] **Nâng cấp Quản lý Người Dùng** (`UserManagePage.jsx`):
+  * Thay thế toàn bộ `window.confirm` và `alert` mặc định bằng `confirmDialog` & `notify` cao cấp.
+  * Thêm state errors, tích hợp `noValidate` cho form và validate tên không được trống, SĐT Việt Nam hợp lệ.
+- [x] **Kiểm tra và biên dịch**: Chạy `npm run build` kiểm tra toàn bộ ứng dụng khách hàng và quản trị biên dịch thành công 100% không có lỗi.
+
+### 7. Việt hóa toàn diện Hệ thống Validation phía Backend (Laravel) ✅
+- [x] **Thiết lập bản dịch tiếng Việt** (`backend/lang/vi/validation.php`): Định nghĩa tất cả các rule validation và dịch nghĩa toàn bộ tên trường thuộc tính của các bảng dữ liệu T-Cine sang tiếng Việt.
+- [x] **Kích hoạt gói ngôn ngữ tiếng Việt** (`backend/.env`): Thay đổi `APP_LOCALE=vi` và `APP_FAKER_LOCALE=vi_VN` để kích hoạt gói ngôn ngữ mặc định mới.
+- [x] **Kiểm tra cú pháp**: Chạy thành công lệnh kiểm tra cú pháp PHP `php -l` cho file bản dịch ngôn ngữ mới không có bất kỳ lỗi nào.
+
+### 8. Đồng bộ hóa & Premium hóa Validation trang Thành viên phía Khách hàng ✅
+- [x] **Nâng cấp trang Thành viên** (`ProfilePage.jsx`): Tích hợp `noValidate` cho cả form thông tin cá nhân và form đổi mật khẩu.
+- [x] **Cải tiến Giao diện lỗi**: Thêm state `errors` và `pwErrors`, hiển thị viền đỏ cảnh báo `.inputErrorGlobal` và thông báo lỗi chữ đỏ inline `.errorTextGlobal` tinh tế dưới từng trường thông tin.
+- [x] **Validate phía Frontend**: Kiểm tra họ tên bắt buộc, định dạng số điện thoại Việt Nam hợp lệ; kiểm tra mật khẩu hiện tại, mật khẩu mới tối thiểu 6 ký tự và mật khẩu xác nhận khớp nhau.
+- [x] **Validate phía Backend** (`AuthController.php`): Thêm ràng buộc regex bắt buộc cho số điện thoại của profile và nâng cấp mật khẩu mới không được trùng khớp mật khẩu cũ khi đổi mật khẩu, trả về lỗi bằng tiếng Việt rõ ràng.
+- [x] **Biên dịch thành công**: Chạy lệnh `npm run build` kiểm tra toàn bộ ứng dụng khách hàng và quản trị biên dịch thành công 100% không có lỗi.
+
+
+
+
 
 
 

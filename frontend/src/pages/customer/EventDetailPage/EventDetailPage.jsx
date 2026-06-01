@@ -88,7 +88,7 @@ const EventDetailPage = () => {
           <h1 className={styles.eventTitle}>{event.title}</h1>
 
           {event.description && (
-            <p style={{ color: '#666', fontSize: 15, marginBottom: 20, fontStyle: 'italic' }}>{event.description}</p>
+            <p style={{ color: '#666', fontSize: 15, marginBottom: 20, fontStyle: 'italic', whiteSpace: 'pre-wrap' }}>{event.description}</p>
           )}
 
           <div className={styles.eventBody}>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import useAuthStore from '../../store/useAuthStore';
-import Toast from '../../components/Toast/Toast';
+import { notify, translateError } from '../../utils/notify';
 import styles from './Auth.module.scss';
 
 const RegisterPage = () => {
@@ -12,8 +12,7 @@ const RegisterPage = () => {
     password: '',
     password_confirmation: ''
   });
-  const [validationError, setValidationError] = useState('');
-  const [toast, setToast] = useState(null);
+  const [errors, setErrors] = useState({});
   
   const navigate = useNavigate();
   const { register, isLoading, error, clearError } = useAuthStore();
@@ -25,26 +24,46 @@ const RegisterPage = () => {
   const handleChange = (e) => {
     const { id, value } = e.target;
     setFormData(prev => ({ ...prev, [id]: value }));
-    setValidationError('');
+    setErrors(prev => ({ ...prev, [id]: '' }));
+    clearError();
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!formData.name || !formData.email || !formData.password) {
-      setValidationError('Vui lòng điền đầy đủ thông tin');
-      return;
+    // Validate fields at frontend
+    const newErrors = {};
+    if (!formData.name.trim()) {
+      newErrors.name = 'Họ và tên không được để trống';
     }
     
-    if (formData.password.length < 6) {
-      setValidationError('Mật khẩu phải có ít nhất 6 ký tự');
+    if (!formData.email.trim()) {
+      newErrors.email = 'Email không được để trống';
+    } else {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.email)) {
+        newErrors.email = 'Địa chỉ email không đúng định dạng';
+      }
+    }
+
+    if (!formData.password.trim()) {
+      newErrors.password = 'Mật khẩu không được để trống';
+    } else if (formData.password.length < 6) {
+      newErrors.password = 'Mật khẩu phải chứa ít nhất 6 ký tự';
+    }
+
+    if (!formData.password_confirmation.trim()) {
+      newErrors.password_confirmation = 'Vui lòng xác nhận mật khẩu';
+    } else if (formData.password !== formData.password_confirmation) {
+      newErrors.password_confirmation = 'Mật khẩu xác nhận không trùng khớp';
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
       return;
     }
 
-    if (formData.password !== formData.password_confirmation) {
-      setValidationError('Mật khẩu xác nhận không khớp');
-      return;
-    }
+    setErrors({});
 
     try {
       await register({
@@ -54,10 +73,12 @@ const RegisterPage = () => {
         password: formData.password,
         password_confirmation: formData.password_confirmation
       });
-      setToast({ message: 'Đăng ký thành công! Chuyển hướng đến trang đăng nhập...', type: 'success' });
+      notify.success('Đăng ký tài khoản thành công! Đang chuyển hướng...', 'Đăng ký thành công');
       setTimeout(() => navigate('/dang-nhap'), 2000);
     } catch (err) {
-      // Lỗi đã được xử lý trong useAuthStore
+      // Nhận lỗi từ backend, dịch sang Tiếng Việt và bắn Toast lỗi
+      const backendError = err.response?.data?.errors || err.response?.data?.message || 'Đăng ký thất bại. Vui lòng thử lại.';
+      notify.error(translateError(backendError), 'Đăng ký thất bại');
     }
   };
 
@@ -71,9 +92,8 @@ const RegisterPage = () => {
             <p>Trở thành thành viên để nhận nhiều ưu đãi</p>
           </div>
 
-          <form onSubmit={handleSubmit} className={styles.authForm}>
+          <form onSubmit={handleSubmit} className={styles.authForm} noValidate>
             
-            {validationError && <div className={styles.errorMsg}>{validationError}</div>}
             {error && <div className={styles.errorMsg}>{error}</div>}
 
             <div className={styles.formGroup}>
@@ -84,8 +104,9 @@ const RegisterPage = () => {
                 value={formData.name}
                 onChange={handleChange}
                 placeholder="Nhập họ và tên"
-                required
+                className={errors.name ? styles.inputError : ''}
               />
+              {errors.name && <span className={styles.errorText}>{errors.name}</span>}
             </div>
 
             <div className={styles.formGroup}>
@@ -96,8 +117,9 @@ const RegisterPage = () => {
                 value={formData.email}
                 onChange={handleChange}
                 placeholder="Nhập địa chỉ email"
-                required
+                className={errors.email ? styles.inputError : ''}
               />
+              {errors.email && <span className={styles.errorText}>{errors.email}</span>}
             </div>
 
             <div className={styles.formGroup}>
@@ -119,8 +141,9 @@ const RegisterPage = () => {
                 value={formData.password}
                 onChange={handleChange}
                 placeholder="Nhập mật khẩu (ít nhất 6 ký tự)"
-                required
+                className={errors.password ? styles.inputError : ''}
               />
+              {errors.password && <span className={styles.errorText}>{errors.password}</span>}
             </div>
 
             <div className={styles.formGroup}>
@@ -131,16 +154,17 @@ const RegisterPage = () => {
                 value={formData.password_confirmation}
                 onChange={handleChange}
                 placeholder="Nhập lại mật khẩu"
-                required
+                className={errors.password_confirmation ? styles.inputError : ''}
               />
+              {errors.password_confirmation && <span className={styles.errorText}>{errors.password_confirmation}</span>}
             </div>
 
             <button 
               type="submit" 
               className={styles.submitBtn}
-              disabled={isLoading || !formData.name || !formData.email || !formData.password}
+              disabled={isLoading}
             >
-              {isLoading ? 'ĐANG XỬ LÝ...' : 'ĐĂNG KÝ TÀI KHOẢN'}
+              {isLoading ? 'ĐĂNG XỬ LÝ...' : 'ĐĂNG KÝ TÀI KHOẢN'}
             </button>
 
             <div className={styles.authFooter}>
@@ -149,8 +173,6 @@ const RegisterPage = () => {
           </form>
         </div>
       </div>
-
-      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
     </div>
   );
 };

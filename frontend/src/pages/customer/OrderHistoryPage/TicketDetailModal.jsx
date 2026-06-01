@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   MdClose,
   MdLocationOn,
@@ -266,14 +267,23 @@ const TicketDetailModal = ({ booking, onClose, onCancel }) => {
             Đóng
           </button>
           {booking.status === 'pending' && (
-            <button
-              className={styles.dangerBtn}
-              onClick={handleCancelClick}
-              type="button"
-              disabled={confirming}
-            >
-              {confirming ? 'Đang hủy...' : 'Hủy đơn'}
-            </button>
+            <>
+              <button
+                className={styles.dangerBtn}
+                onClick={handleCancelClick}
+                type="button"
+                disabled={confirming}
+              >
+                {confirming ? 'Đang hủy...' : 'Hủy đơn'}
+              </button>
+              <Link
+                to={`/thanh-toan/${booking.id}`}
+                className={styles.primaryBtn}
+                onClick={onClose}
+              >
+                Thanh toán ngay
+              </Link>
+            </>
           )}
         </div>
       </div>

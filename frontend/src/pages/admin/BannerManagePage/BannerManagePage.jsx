@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { MdAdd, MdEdit, MdDelete, MdClose, MdCloudUpload, MdVisibility, MdVisibilityOff } from 'react-icons/md';
 import bannerApi from '../../../api/bannerApi';
 import axiosClient from '../../../api/axiosClient';
-import Toast from '../../../components/Toast/Toast';
+import { notify, confirmDialog } from '../../../utils/notify';
 import styles from './BannerManagePage.module.scss';
 
 const STORAGE_URL = import.meta.env.VITE_STORAGE_URL || 'http://localhost:8000/storage';
@@ -19,6 +19,7 @@ const BannerManagePage = () => {
   const [banners, setBanners] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [errors, setErrors] = useState({});
 
   const [previewImage, setPreviewImage] = useState(null);
   const [imageFile, setImageFile] = useState(null);
@@ -30,12 +31,7 @@ const BannerManagePage = () => {
     is_active: true,
   });
 
-  const [toast, setToast] = useState({ message: '', type: 'success' });
-
   const imageInputRef = useRef(null);
-
-  const showToast = (message, type = 'success') => setToast({ message, type });
-  const closeToast = () => setToast({ message: '', type: 'success' });
 
   const fetchBanners = async () => {
     setLoading(true);
@@ -44,7 +40,7 @@ const BannerManagePage = () => {
       setBanners(res.data || []);
     } catch (error) {
       console.error('Lỗi tải banner:', error);
-      showToast('Không tải được danh sách banner!', 'error');
+      notify.error('Không tải được danh sách banner!', 'Lỗi tải dữ liệu');
     } finally {
       setLoading(false);
     }
@@ -67,6 +63,7 @@ const BannerManagePage = () => {
     setFormData({ title: '', link_url: '', position: 0, is_active: true });
     setPreviewImage(null);
     setImageFile(null);
+    setErrors({});
     setIsModalOpen(true);
   };
 
@@ -80,6 +77,7 @@ const BannerManagePage = () => {
     });
     setPreviewImage(getImageUrl(banner.image_url));
     setImageFile(null);
+    setErrors({});
     setIsModalOpen(true);
   };
 
@@ -88,6 +86,7 @@ const BannerManagePage = () => {
     setEditingBanner(null);
     setPreviewImage(null);
     setImageFile(null);
+    setErrors({});
   };
 
   const handleChange = (e) => {
@@ -96,6 +95,7 @@ const BannerManagePage = () => {
       ...prev,
       [name]: type === 'checkbox' ? checked : value,
     }));
+    setErrors(prev => ({ ...prev, [name]: '' }));
   };
 
   const handleImageUpload = (e) => {
@@ -105,36 +105,50 @@ const BannerManagePage = () => {
       const reader = new FileReader();
       reader.onloadend = () => setPreviewImage(reader.result);
       reader.readAsDataURL(file);
+      setErrors(prev => ({ ...prev, image: '' }));
     }
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Bạn có chắc muốn xóa banner này?')) return;
+    const ok = await confirmDialog({
+      title: 'Xóa banner quảng cáo?',
+      message: 'Bạn có chắc chắn muốn xóa banner này không? Hành động này không thể hoàn tác.',
+      confirmText: 'Xóa banner',
+      danger: true,
+    });
+    if (!ok) return;
+
     try {
       await bannerApi.delete(id);
-      showToast('Đã xóa banner!', 'success');
+      notify.success('Đã xóa banner thành công!', 'Thành công');
       fetchBanners();
     } catch (error) {
-      showToast('Xóa banner thất bại!', 'error');
+      notify.error('Xóa banner thất bại!', 'Lỗi');
     }
   };
 
   const handleToggleActive = async (banner) => {
     try {
       await bannerApi.update(banner.id, { is_active: !banner.is_active });
+      notify.success('Cập nhật trạng thái banner thành công!', 'Thành công');
       fetchBanners();
     } catch (error) {
-      showToast('Không thể cập nhật trạng thái!', 'error');
+      notify.error('Không thể cập nhật trạng thái banner!', 'Lỗi');
     }
   };
 
   const handleSave = async () => {
-    // Khi tạo mới bắt buộc có ảnh; khi sửa có thể giữ ảnh cũ
+    const newErrors = {};
     if (!editingBanner && !imageFile) {
-      showToast('Vui lòng chọn ảnh banner!', 'error');
+      newErrors.image = 'Vui lòng tải lên ảnh banner quảng cáo';
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
       return;
     }
 
+    setErrors({});
     setSaving(true);
     try {
       let imageUrl = editingBanner?.image_url || '';
@@ -152,17 +166,17 @@ const BannerManagePage = () => {
 
       if (editingBanner) {
         await bannerApi.update(editingBanner.id, payload);
-        showToast('Đã cập nhật banner!', 'success');
+        notify.success('Đã cập nhật banner thành công!', 'Thành công');
       } else {
         await bannerApi.create(payload);
-        showToast('Đã thêm banner mới!', 'success');
+        notify.success('Đã thêm banner mới thành công!', 'Thành công');
       }
 
       handleCloseModal();
       fetchBanners();
     } catch (error) {
       console.error('Lỗi lưu banner:', error);
-      showToast('Lưu banner thất bại! ' + (error.response?.data?.message || ''), 'error');
+      notify.error('Lưu banner thất bại! ' + (error.response?.data?.message || ''), 'Lỗi');
     } finally {
       setSaving(false);
     }
@@ -270,11 +284,11 @@ const BannerManagePage = () => {
             </div>
 
             <div className={styles.modalBody}>
-              <form className={styles.form} onSubmit={(e) => e.preventDefault()}>
+              <form className={styles.form} onSubmit={(e) => e.preventDefault()} noValidate>
                 <div className={styles.formGroup}>
                   <label>Ảnh Banner *</label>
                   <div
-                    className={styles.uploadArea}
+                    className={`${styles.uploadArea} ${errors.image ? 'inputErrorGlobal' : ''}`}
                     onClick={() => imageInputRef.current.click()}
                     style={{ backgroundImage: previewImage ? `url(${previewImage})` : 'none' }}
                   >
@@ -292,6 +306,7 @@ const BannerManagePage = () => {
                       hidden
                     />
                   </div>
+                  {errors.image && <span className="errorTextGlobal">{errors.image}</span>}
                   <small className={styles.uploadHint}>
                     ⚠️ <strong>Yêu cầu:</strong> Tỉ lệ <strong>ngang 16:5</strong> (khuyến nghị <strong>1920×600px</strong>),
                     định dạng JPG/PNG/WEBP, dung lượng ≤ 10MB. Tránh đặt chữ quá sát viền vì có thể bị che bởi nút điều hướng.
@@ -358,8 +373,6 @@ const BannerManagePage = () => {
           </div>
         </div>
       )}
-
-      <Toast message={toast.message} type={toast.type} onClose={closeToast} />
     </div>
   );
 };

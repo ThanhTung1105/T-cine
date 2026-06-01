@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { MdVisibility, MdSearch, MdClose, MdCheckCircle, MdCancel } from 'react-icons/md';
 import axiosClient from '../../../api/axiosClient';
+import { notify, confirmDialog } from '../../../utils/notify';
 import styles from './OrderManagePage.module.scss';
 
 const statusMap = { pending: 'Chờ thanh toán', paid: 'Đã thanh toán', cancelled: 'Đã hủy' };
@@ -27,12 +28,22 @@ const OrderManagePage = () => {
   const handleCloseModal = () => setIsModalOpen(false);
 
   const handleUpdateStatus = async (id, status) => {
-    if (!window.confirm(`Bạn muốn chuyển trạng thái sang "${statusMap[status]}"?`)) return;
+    const ok = await confirmDialog({
+      title: 'Cập nhật trạng thái đơn hàng?',
+      message: `Bạn có chắc chắn muốn chuyển trạng thái đơn hàng này sang "${statusMap[status]}" không?`,
+      confirmText: 'Xác nhận chuyển',
+      danger: status === 'cancelled',
+    });
+    if (!ok) return;
+
     try {
       await axiosClient.put(`/admin/bookings/${id}/status`, { status });
+      notify.success('Cập nhật trạng thái đơn hàng thành công!', 'Thành công');
       fetchOrders();
       if (isModalOpen) handleCloseModal();
-    } catch (e) { alert('Cập nhật thất bại!'); }
+    } catch (e) { 
+      notify.error('Cập nhật trạng thái thất bại!', 'Lỗi');
+    }
   };
 
   const filteredOrders = orders.filter(o =>

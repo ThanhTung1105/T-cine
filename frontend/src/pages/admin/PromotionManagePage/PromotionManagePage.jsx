@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { MdAdd, MdEdit, MdDelete, MdClose, MdContentCopy, MdLocalOffer } from 'react-icons/md';
 import promotionApi from '../../../api/promotionApi';
-import Toast from '../../../components/Toast/Toast';
+import { notify, confirmDialog } from '../../../utils/notify';
 import styles from './PromotionManagePage.module.scss';
 
 const formatDate = (d) => (d ? new Date(d).toLocaleDateString('vi-VN') : '—');
@@ -18,6 +18,7 @@ const PromotionManagePage = () => {
   const [promotions, setPromotions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [errors, setErrors] = useState({});
 
   const [formData, setFormData] = useState({
     code: '',
@@ -28,19 +29,14 @@ const PromotionManagePage = () => {
     usage_limit: '',
   });
 
-  const [toast, setToast] = useState({ message: '', type: 'success' });
-  const showToast = (message, type = 'success') => setToast({ message, type });
-  const closeToast = () => setToast({ message: '', type: 'success' });
-
   const fetchPromotions = async () => {
     setLoading(true);
     try {
       const res = await promotionApi.adminGetAll({ per_page: 100 });
-      // API admin/promotions trả về paginate => res.data là array
       setPromotions(res.data || []);
     } catch (error) {
       console.error('Lỗi tải mã:', error);
-      showToast('Không tải được danh sách mã giảm giá!', 'error');
+      notify.error('Không tải được danh sách mã giảm giá!', 'Lỗi tải dữ liệu');
     } finally {
       setLoading(false);
     }
@@ -58,6 +54,7 @@ const PromotionManagePage = () => {
       valid_to: '',
       usage_limit: '',
     });
+    setErrors({});
     setIsModalOpen(true);
   };
 
@@ -71,50 +68,71 @@ const PromotionManagePage = () => {
       valid_to: promo.valid_to ? promo.valid_to.split('T')[0] : '',
       usage_limit: promo.usage_limit || '',
     });
+    setErrors({});
     setIsModalOpen(true);
   };
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setEditing(null);
+    setErrors({});
   };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    setErrors(prev => ({ ...prev, [name]: '' }));
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Bạn có chắc muốn xóa mã giảm giá này?')) return;
+    const ok = await confirmDialog({
+      title: 'Xóa mã giảm giá?',
+      message: 'Bạn có chắc chắn muốn xóa mã giảm giá này không? Hành động này không thể hoàn tác.',
+      confirmText: 'Xóa mã giảm giá',
+      danger: true,
+    });
+    if (!ok) return;
+
     try {
       await promotionApi.delete(id);
-      showToast('Đã xóa mã giảm giá!', 'success');
+      notify.success('Đã xóa mã giảm giá thành công!', 'Thành công');
       fetchPromotions();
     } catch {
-      showToast('Xóa mã thất bại!', 'error');
+      notify.error('Xóa mã giảm giá thất bại!', 'Lỗi');
     }
   };
 
   const handleCopy = (code) => {
     navigator.clipboard.writeText(code).then(() => {
-      showToast(`Đã sao chép mã ${code}!`, 'success');
+      notify.success(`Đã sao chép mã ${code} vào bộ nhớ tạm!`, 'Đã sao chép');
     });
   };
 
   const handleSave = async () => {
-    if (!formData.code || !formData.discount_percent || !formData.valid_from || !formData.valid_to) {
-      showToast('Vui lòng nhập đầy đủ: Mã, %, ngày bắt đầu/kết thúc!', 'error');
-      return;
+    const newErrors = {};
+    if (!formData.code.trim()) {
+      newErrors.code = 'Vui lòng nhập mã giảm giá';
     }
-    if (Number(formData.discount_percent) < 1 || Number(formData.discount_percent) > 100) {
-      showToast('% giảm giá phải từ 1-100!', 'error');
-      return;
+    if (!formData.discount_percent) {
+      newErrors.discount_percent = 'Vui lòng nhập % giảm giá';
+    } else if (Number(formData.discount_percent) < 1 || Number(formData.discount_percent) > 100) {
+      newErrors.discount_percent = '% giảm giá phải từ 1 đến 100';
     }
-    if (new Date(formData.valid_to) <= new Date(formData.valid_from)) {
-      showToast('Ngày kết thúc phải sau ngày bắt đầu!', 'error');
+    if (!formData.valid_from) {
+      newErrors.valid_from = 'Vui lòng chọn ngày bắt đầu';
+    }
+    if (!formData.valid_to) {
+      newErrors.valid_to = 'Vui lòng chọn ngày kết thúc';
+    } else if (formData.valid_from && new Date(formData.valid_to) <= new Date(formData.valid_from)) {
+      newErrors.valid_to = 'Ngày kết thúc phải sau ngày bắt đầu';
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
       return;
     }
 
+    setErrors({});
     setSaving(true);
     try {
       const payload = {
@@ -128,10 +146,10 @@ const PromotionManagePage = () => {
 
       if (editing) {
         await promotionApi.update(editing.id, payload);
-        showToast('Đã cập nhật mã giảm giá!', 'success');
+        notify.success('Đã cập nhật thông tin mã giảm giá thành công!', 'Thành công');
       } else {
         await promotionApi.create(payload);
-        showToast('Đã thêm mã giảm giá mới!', 'success');
+        notify.success('Đã thêm mã giảm giá mới thành công!', 'Thành công');
       }
 
       handleCloseModal();
@@ -140,8 +158,8 @@ const PromotionManagePage = () => {
       console.error('Lỗi lưu mã:', error);
       const msg = error.response?.data?.errors?.code?.[0]
         || error.response?.data?.message
-        || 'Lưu mã thất bại!';
-      showToast(msg, 'error');
+        || 'Lưu mã giảm giá thất bại!';
+      notify.error(msg, 'Lỗi');
     } finally {
       setSaving(false);
     }
@@ -253,7 +271,7 @@ const PromotionManagePage = () => {
             </div>
 
             <div className={styles.modalBody}>
-              <form className={styles.form} onSubmit={(e) => e.preventDefault()}>
+              <form className={styles.form} onSubmit={(e) => e.preventDefault()} noValidate>
                 <div className={styles.formGroup}>
                   <label>Mã giảm giá *</label>
                   <input
@@ -263,8 +281,9 @@ const PromotionManagePage = () => {
                     placeholder="VD: GIAMGIA50"
                     maxLength="50"
                     disabled={!!editing}
-                    className={styles.codeInput}
+                    className={`${styles.codeInput} ${errors.code ? 'inputErrorGlobal' : ''}`}
                   />
+                  {errors.code && <span className="errorTextGlobal">{errors.code}</span>}
                   <small className={styles.hint}>
                     Mã sẽ tự động viết HOA. Không được trùng với mã khác. {editing && '(Không thể đổi mã sau khi tạo)'}
                   </small>
@@ -277,7 +296,9 @@ const PromotionManagePage = () => {
                       type="number" name="discount_percent"
                       value={formData.discount_percent} onChange={handleChange}
                       min="1" max="100" placeholder="10"
+                      className={errors.discount_percent ? 'inputErrorGlobal' : ''}
                     />
+                    {errors.discount_percent && <span className="errorTextGlobal">{errors.discount_percent}</span>}
                   </div>
                   <div className={styles.formGroup}>
                     <label>Số tiền giảm tối đa (VNĐ)</label>
@@ -295,14 +316,18 @@ const PromotionManagePage = () => {
                     <input
                       type="date" name="valid_from"
                       value={formData.valid_from} onChange={handleChange}
+                      className={errors.valid_from ? 'inputErrorGlobal' : ''}
                     />
+                    {errors.valid_from && <span className="errorTextGlobal">{errors.valid_from}</span>}
                   </div>
                   <div className={styles.formGroup}>
                     <label>Ngày kết thúc *</label>
                     <input
                       type="date" name="valid_to"
                       value={formData.valid_to} onChange={handleChange}
+                      className={errors.valid_to ? 'inputErrorGlobal' : ''}
                     />
+                    {errors.valid_to && <span className="errorTextGlobal">{errors.valid_to}</span>}
                   </div>
                   <div className={styles.formGroup}>
                     <label>Giới hạn lượt dùng</label>
@@ -325,8 +350,6 @@ const PromotionManagePage = () => {
           </div>
         </div>
       )}
-
-      <Toast message={toast.message} type={toast.type} onClose={closeToast} />
     </div>
   );
 };

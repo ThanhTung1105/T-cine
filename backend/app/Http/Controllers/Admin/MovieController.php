@@ -29,10 +29,22 @@ class MovieController extends Controller
             'rating' => 'nullable|numeric|min:0|max:10',
             'release_date' => 'nullable|date',
             'status' => 'required|in:now_showing,coming_soon,ended',
+            'is_featured' => 'nullable|boolean',
         ]);
+
+        $isFeatured = filter_var($request->is_featured, FILTER_VALIDATE_BOOLEAN);
+        if ($isFeatured) {
+            $featuredCount = Movie::where('is_featured', true)->count();
+            if ($featuredCount >= 4) {
+                return response()->json([
+                    'message' => 'Chỉ được hiển thị tối đa 4 phim nổi bật trên trang chủ. Vui lòng bỏ chọn phim khác trước.',
+                ], 422);
+            }
+        }
 
         $data = $request->all();
         $data['slug'] = Str::slug($request->title) . '-' . Str::random(5);
+        $data['is_featured'] = $isFeatured;
 
         $movie = Movie::create($data);
 
@@ -54,11 +66,25 @@ class MovieController extends Controller
             'title' => 'sometimes|string|max:255',
             'status' => 'sometimes|in:now_showing,coming_soon,ended',
             'rating' => 'nullable|numeric|min:0|max:10',
+            'is_featured' => 'nullable|boolean',
         ]);
 
         $data = $request->all();
         if ($request->has('title') && $request->title !== $movie->title) {
             $data['slug'] = Str::slug($request->title) . '-' . Str::random(5);
+        }
+
+        if ($request->has('is_featured')) {
+            $isFeatured = filter_var($request->is_featured, FILTER_VALIDATE_BOOLEAN);
+            if ($isFeatured) {
+                $featuredCount = Movie::where('is_featured', true)->where('id', '!=', $id)->count();
+                if ($featuredCount >= 4) {
+                    return response()->json([
+                        'message' => 'Chỉ được hiển thị tối đa 4 phim nổi bật trên trang chủ. Vui lòng bỏ chọn phim khác trước.',
+                    ], 422);
+                }
+            }
+            $data['is_featured'] = $isFeatured;
         }
 
         $movie->update($data);

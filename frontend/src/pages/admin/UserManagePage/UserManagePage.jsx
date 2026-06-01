@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { MdEdit, MdDelete, MdClose, MdSearch } from 'react-icons/md';
 import axiosClient from '../../../api/axiosClient';
+import { getErrorMessage } from '../../../utils/helpers';
+import { notify, confirmDialog } from '../../../utils/notify';
 import styles from './UserManagePage.module.scss';
 
 const roleMap = { admin: 'Quản trị viên', customer: 'Khách hàng' };
@@ -13,6 +15,7 @@ const UserManagePage = () => {
   const [saving, setSaving] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [formData, setFormData] = useState({ name: '', phone: '', role: 'customer' });
+  const [errors, setErrors] = useState({});
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -25,29 +28,75 @@ const UserManagePage = () => {
 
   useEffect(() => { fetchUsers(); }, []);
 
-  const handleChange = (e) => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+  const handleChange = (e) => {
+    setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    setErrors(prev => ({ ...prev, [e.target.name]: '' }));
+  };
 
   const handleEdit = (user) => {
     setEditingUser(user);
     setFormData({ name: user.name, phone: user.phone || '', role: user.role });
+    setErrors({});
     setIsModalOpen(true);
   };
 
-  const handleCloseModal = () => { setIsModalOpen(false); setEditingUser(null); };
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setEditingUser(null);
+    setErrors({});
+  };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Bạn có chắc muốn xóa người dùng này?')) return;
-    try { await axiosClient.delete(`/admin/users/${id}`); fetchUsers(); }
-    catch (e) { alert('Xóa thất bại!'); }
+    const ok = await confirmDialog({
+      title: 'Xóa người dùng này?',
+      message: 'Hành động này không thể hoàn tác. Người dùng sẽ bị xóa khỏi hệ thống.',
+      confirmText: 'Xóa',
+      danger: true,
+    });
+    if (!ok) return;
+
+    try {
+      await axiosClient.delete(`/admin/users/${id}`);
+      notify.success('Đã xóa người dùng thành công');
+      fetchUsers();
+    } catch (e) {
+      console.error(e);
+      notify.error(getErrorMessage(e), 'Xóa thất bại!');
+    }
   };
 
   const handleSave = async () => {
+    const newErrors = {};
+    if (!formData.name?.trim()) {
+      newErrors.name = 'Họ và tên không được để trống';
+    }
+    
+    const phoneVal = formData.phone?.trim();
+    if (phoneVal && !/^[0-9]{10,11}$/.test(phoneVal)) {
+      newErrors.phone = 'Số điện thoại phải từ 10 đến 11 số';
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
     setSaving(true);
     try {
-      await axiosClient.put(`/admin/users/${editingUser.id}`, formData);
-      handleCloseModal(); fetchUsers();
-    } catch (e) { alert('Cập nhật thất bại!'); }
-    finally { setSaving(false); }
+      await axiosClient.put(`/admin/users/${editingUser.id}`, {
+        name: formData.name.trim(),
+        phone: phoneVal,
+        role: formData.role,
+      });
+      notify.success('Cập nhật thông tin người dùng thành công');
+      handleCloseModal();
+      fetchUsers();
+    } catch (e) {
+      console.error(e);
+      notify.error(getErrorMessage(e), 'Cập nhật thất bại!');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleSearch = () => fetchUsers();
@@ -103,10 +152,18 @@ const UserManagePage = () => {
               <button className={styles.closeBtn} onClick={handleCloseModal}><MdClose /></button>
             </div>
             <div className={styles.modalBody}>
-              <form className={styles.form} onSubmit={e => e.preventDefault()}>
-                <div className={styles.formGroup}><label>Họ và tên</label><input type="text" name="name" value={formData.name} onChange={handleChange} /></div>
+              <form className={styles.form} onSubmit={e => e.preventDefault()} noValidate>
+                <div className={styles.formGroup}>
+                  <label>Họ và tên *</label>
+                  <input type="text" name="name" value={formData.name} onChange={handleChange} className={errors.name ? 'inputErrorGlobal' : ''} />
+                  {errors.name && <span className="errorTextGlobal">{errors.name}</span>}
+                </div>
                 <div className={styles.formRow}>
-                  <div className={styles.formGroup}><label>Số điện thoại</label><input type="text" name="phone" value={formData.phone} onChange={handleChange} /></div>
+                  <div className={styles.formGroup}>
+                    <label>Số điện thoại</label>
+                    <input type="text" name="phone" value={formData.phone} onChange={handleChange} className={errors.phone ? 'inputErrorGlobal' : ''} />
+                    {errors.phone && <span className="errorTextGlobal">{errors.phone}</span>}
+                  </div>
                   <div className={styles.formGroup}>
                     <label>Vai trò</label>
                     <select name="role" value={formData.role} onChange={handleChange}>

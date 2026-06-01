@@ -4,7 +4,7 @@ import { IoSend, IoClose } from 'react-icons/io5';
 import { BsTrash3, BsRobot } from 'react-icons/bs';
 import { FiMinus } from 'react-icons/fi';
 import chatbotApi from '../../../api/chatbotApi';
-import { notify } from '../../../utils/notify';
+import { notify, confirmDialog } from '../../../utils/notify';
 import styles from './ChatWidget.module.scss';
 
 const ChatWidget = () => {
@@ -146,10 +146,16 @@ const ChatWidget = () => {
   };
 
   // Reset cuộc trò chuyện (Làm trống state về mặc định)
-  const handleResetChat = () => {
+  const handleResetChat = async () => {
     if (messages.length <= 1) return;
 
-    const confirmReset = window.confirm('Bạn có muốn xóa cuộc trò chuyện này và bắt đầu cuộc hội thoại mới không?');
+    const confirmReset = await confirmDialog({
+      title: 'Làm mới cuộc trò chuyện?',
+      message: 'Bạn có chắc chắn muốn xóa toàn bộ lịch sử cuộc trò chuyện này để bắt đầu cuộc hội thoại mới không?',
+      confirmText: 'Làm mới',
+      danger: true,
+    });
+
     if (confirmReset) {
       setMessages([
         {

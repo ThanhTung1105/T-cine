@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { MdAdd, MdEdit, MdDelete, MdClose, MdCloudUpload } from 'react-icons/md';
 import movieApi from '../../../api/movieApi';
 import axiosClient from '../../../api/axiosClient';
+import { notify, confirmDialog } from '../../../utils/notify';
 import styles from './MovieManagePage.module.scss';
 
 const STORAGE_URL = import.meta.env.VITE_STORAGE_URL || 'http://localhost:8000/storage';
@@ -14,11 +15,12 @@ const MovieManagePage = () => {
   const [movies, setMovies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [errors, setErrors] = useState({});
 
   const [formData, setFormData] = useState({
     title: '', description: '', genre: '', director: '', cast_info: '',
     duration: '', age_rating: 'T13', rating: '', release_date: '',
-    status: 'now_showing', trailer_url: '',
+    status: 'now_showing', trailer_url: '', is_featured: false,
   });
   
   const posterInputRef = useRef(null);
@@ -31,6 +33,7 @@ const MovieManagePage = () => {
       setMovies(res.data || []);
     } catch (error) {
       console.error('Lỗi tải phim:', error);
+      notify.error('Không tải được danh sách phim!', 'Lỗi tải dữ liệu');
     } finally {
       setLoading(false);
     }
@@ -55,10 +58,11 @@ const MovieManagePage = () => {
     setFormData({
       title: '', description: '', genre: '', director: '', cast_info: '',
       duration: '', age_rating: 'T13', rating: '', release_date: '',
-      status: 'now_showing', trailer_url: '',
+      status: 'now_showing', trailer_url: '', is_featured: false,
     });
     setPreviewPoster(null);
     setPosterFile(null);
+    setErrors({});
     setIsModalOpen(true);
   };
 
@@ -72,9 +76,11 @@ const MovieManagePage = () => {
       age_rating: movie.age_rating || 'T13', rating: movie.rating || '',
       release_date: movie.release_date || '', status: movie.status || 'now_showing',
       trailer_url: movie.trailer_url || '',
+      is_featured: movie.is_featured === 1 || movie.is_featured === true || false,
     });
     setPreviewPoster(movie.poster ? (movie.poster.startsWith('http') ? movie.poster : `${STORAGE_URL}/${movie.poster}`) : null);
     setPosterFile(null);
+    setErrors({});
     setIsModalOpen(true);
   };
 
@@ -82,10 +88,12 @@ const MovieManagePage = () => {
     setIsModalOpen(false);
     setEditingMovie(null);
     setPreviewPoster(null);
+    setErrors({});
   };
 
   const handleChange = (e) => {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    setErrors(prev => ({ ...prev, [e.target.name]: '' }));
   };
 
   const handleImageUpload = (e, setPreview, setFile) => {
@@ -100,21 +108,38 @@ const MovieManagePage = () => {
 
   // Xóa phim
   const handleDelete = async (id) => {
-    if (!window.confirm('Bạn có chắc muốn xóa phim này?')) return;
+    const ok = await confirmDialog({
+      title: 'Xóa phim?',
+      message: 'Bạn có chắc chắn muốn xóa bộ phim này không? Tất cả lịch chiếu và thông tin liên quan sẽ bị xóa. Hành động này không thể hoàn tác.',
+      confirmText: 'Xóa phim',
+      danger: true,
+    });
+    if (!ok) return;
+
     try {
       await movieApi.delete(id);
+      notify.success('Đã xóa phim thành công!', 'Thành công');
       fetchMovies();
     } catch (error) {
-      alert('Xóa phim thất bại!');
+      notify.error('Xóa phim thất bại!', 'Lỗi');
     }
   };
 
-  // Lưu phim (thêm mới hoặc cập nhật)
   const handleSave = async () => {
-    if (!formData.title || !formData.status) {
-      alert('Vui lòng nhập tên phim và trạng thái!');
+    const newErrors = {};
+    if (!formData.title.trim()) {
+      newErrors.title = 'Vui lòng nhập tên phim';
+    }
+    if (!formData.status) {
+      newErrors.status = 'Vui lòng chọn trạng thái phim';
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
       return;
     }
+
+    setErrors({});
     setSaving(true);
     try {
       let posterUrl = editingMovie?.poster || '';
@@ -127,21 +152,43 @@ const MovieManagePage = () => {
         poster: posterUrl,
         duration: formData.duration ? parseInt(formData.duration) : null,
         rating: formData.rating ? parseFloat(formData.rating) : null,
+        is_featured: formData.is_featured ? 1 : 0,
       };
 
       if (editingMovie) {
         await movieApi.update(editingMovie.id, payload);
+        notify.success('Đã cập nhật thông tin phim thành công!', 'Thành công');
       } else {
         await movieApi.create(payload);
+        notify.success('Đã thêm phim mới thành công!', 'Thành công');
       }
 
       handleCloseModal();
       fetchMovies();
     } catch (error) {
       console.error('Lỗi lưu phim:', error);
-      alert('Lưu phim thất bại! ' + (error.response?.data?.message || ''));
+      notify.error('Lưu phim thất bại! ' + (error.response?.data?.message || ''), 'Lỗi');
     } finally {
       setSaving(false);
+    }
+  };
+
+  // Bật/tắt nhanh trạng thái hiển thị trang chủ
+  const handleToggleFeatured = async (movie) => {
+    try {
+      const currentFeatured = movie.is_featured === 1 || movie.is_featured === true;
+      const payload = {
+        is_featured: currentFeatured ? 0 : 1
+      };
+      await movieApi.update(movie.id, payload);
+      notify.success(
+        currentFeatured ? 'Đã ẩn phim khỏi Trang chủ!' : 'Đã hiển thị phim lên Trang chủ!',
+        'Thành công'
+      );
+      fetchMovies();
+    } catch (error) {
+      console.error('Lỗi toggle featured:', error);
+      notify.error(error.response?.data?.message || 'Thao tác thất bại!', 'Lỗi');
     }
   };
 
@@ -169,12 +216,13 @@ const MovieManagePage = () => {
                 <th>Thể loại</th>
                 <th>Thời lượng</th>
                 <th>Trạng thái</th>
+                <th>Hiện trang chủ</th>
                 <th>Thao tác</th>
               </tr>
             </thead>
             <tbody>
               {movies.length === 0 ? (
-                <tr><td colSpan="6" style={{ textAlign: 'center', padding: '30px', color: '#aaa' }}>Chưa có phim nào</td></tr>
+                <tr><td colSpan="7" style={{ textAlign: 'center', padding: '30px', color: '#aaa' }}>Chưa có phim nào</td></tr>
               ) : movies.map(movie => (
                 <tr key={movie.id}>
                   <td>
@@ -184,13 +232,34 @@ const MovieManagePage = () => {
                       <div className={styles.posterImg} style={{ background: '#333', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', color: '#888' }}>No img</div>
                     )}
                   </td>
-                  <td><strong>{movie.title}</strong></td>
+                  <td>
+                    <strong>{movie.title}</strong>
+                    {(movie.is_featured === 1 || movie.is_featured === true) && (
+                      <span className={styles.featuredBadge} title="Hiển thị ở trang chủ">
+                        ⭐ Trang chủ
+                      </span>
+                    )}
+                  </td>
                   <td>{movie.genre || '-'}</td>
                   <td>{movie.duration ? `${movie.duration} phút` : '-'}</td>
                   <td>
                     <span className={`${styles.statusBadge} ${movie.status === 'now_showing' ? styles.statusActive : movie.status === 'coming_soon' ? styles.statusUpcoming : ''}`}>
                       {statusMap[movie.status] || movie.status}
                     </span>
+                  </td>
+                  <td>
+                    <button
+                      type="button"
+                      onClick={() => handleToggleFeatured(movie)}
+                      className={styles.toggleFeaturedBtn}
+                      title={(movie.is_featured === 1 || movie.is_featured === true) ? 'Tắt hiển thị trang chủ' : 'Bật hiển thị trang chủ'}
+                    >
+                      {(movie.is_featured === 1 || movie.is_featured === true) ? (
+                        <span className={styles.starActive}>⭐ Có</span>
+                      ) : (
+                        <span className={styles.starInactive}>☆ Không</span>
+                      )}
+                    </button>
                   </td>
                   <td>
                     <div className={styles.actionBtns}>
@@ -215,19 +284,21 @@ const MovieManagePage = () => {
             </div>
             
             <div className={styles.modalBody}>
-              <form className={styles.form} onSubmit={(e) => e.preventDefault()}>
+              <form className={styles.form} onSubmit={(e) => e.preventDefault()} noValidate>
                 <div className={styles.formRow}>
                   <div className={styles.formGroup}>
                     <label>Tên phim *</label>
-                    <input type="text" name="title" value={formData.title} onChange={handleChange} placeholder="Nhập tên phim" />
+                    <input type="text" name="title" value={formData.title} onChange={handleChange} placeholder="Nhập tên phim" className={errors.title ? 'inputErrorGlobal' : ''} />
+                    {errors.title && <span className="errorTextGlobal">{errors.title}</span>}
                   </div>
                   <div className={styles.formGroup}>
                     <label>Trạng thái *</label>
-                    <select name="status" value={formData.status} onChange={handleChange}>
+                    <select name="status" value={formData.status} onChange={handleChange} className={errors.status ? 'inputErrorGlobal' : ''}>
                       <option value="now_showing">Đang chiếu</option>
                       <option value="coming_soon">Sắp chiếu</option>
                       <option value="ended">Đã kết thúc</option>
                     </select>
+                    {errors.status && <span className="errorTextGlobal">{errors.status}</span>}
                   </div>
                 </div>
 
@@ -291,6 +362,21 @@ const MovieManagePage = () => {
                   <small style={{ color: '#888', fontSize: 12, marginTop: 4, display: 'block' }}>
                     Hỗ trợ mọi định dạng: youtube.com/watch?v=…, youtu.be/…, youtube.com/embed/…, youtube.com/shorts/…
                   </small>
+                </div>
+
+                {/* Hiển thị ở Trang chủ checkbox */}
+                <div className={styles.formGroup} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 10, marginBottom: 15 }}>
+                  <input
+                    type="checkbox"
+                    id="is_featured"
+                    name="is_featured"
+                    checked={formData.is_featured}
+                    onChange={(e) => setFormData(prev => ({ ...prev, is_featured: e.target.checked }))}
+                    style={{ width: '18px', height: '18px', cursor: 'pointer', margin: 0 }}
+                  />
+                  <label htmlFor="is_featured" style={{ cursor: 'pointer', fontWeight: 600, userSelect: 'none', margin: 0 }}>
+                    ⭐ Hiển thị bộ phim này trên Trang chủ (Tối đa 4 phim)
+                  </label>
                 </div>
 
                 {/* Khu vực Upload Poster */}

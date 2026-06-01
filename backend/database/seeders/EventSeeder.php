@@ -25,7 +25,7 @@ class EventSeeder extends Seeder
                     <h3>Thời gian:</h3>
                     <p>Từ 01/05/2026 đến 31/12/2026, vào mỗi Thứ 4 hàng tuần.</p>',
                 'image' => 'events/member-day.jpg',
-                'category' => 'member',
+                'category' => 'promotion',
                 'start_date' => '2026-05-01',
                 'end_date' => '2026-12-31',
                 'is_active' => true,
@@ -135,7 +135,7 @@ class EventSeeder extends Seeder
                     </ul>
                     <p>Phí thường niên: <strong>499.000đ/năm</strong></p>',
                 'image' => 'events/vip-member.jpg',
-                'category' => 'member',
+                'category' => 'promotion',
                 'start_date' => '2026-01-01',
                 'end_date' => '2026-12-31',
                 'is_active' => true,

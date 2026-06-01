@@ -193,3 +193,21 @@
     margin-bottom: 5px;
   }
 }
+
+.errorText {
+  color: #ef4444;
+  font-size: 12px;
+  font-weight: 500;
+  display: block;
+  margin-top: 5px;
+}
+
+.inputError {
+  border-color: #ef4444 !important;
+  background-color: #fffafb !important;
+  
+  &:focus {
+    box-shadow: 0 0 0 2px rgba(#ef4444, 0.1) !important;
+  }
+}
+

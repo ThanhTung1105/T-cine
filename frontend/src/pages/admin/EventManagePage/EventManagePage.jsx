@@ -6,14 +6,13 @@ import {
 import eventApi from '../../../api/eventApi';
 import promotionApi from '../../../api/promotionApi';
 import axiosClient from '../../../api/axiosClient';
-import Toast from '../../../components/Toast/Toast';
+import { notify, confirmDialog } from '../../../utils/notify';
 import styles from './EventManagePage.module.scss';
 
 const STORAGE_URL = import.meta.env.VITE_STORAGE_URL || 'http://localhost:8000/storage';
 
 const CATEGORIES = [
   { value: 'promotion', label: 'Ưu Đãi' },
-  { value: 'member', label: 'Thành Viên' },
   { value: 'news', label: 'Tin Tức' },
 ];
 
@@ -34,6 +33,7 @@ const EventManagePage = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [filterCategory, setFilterCategory] = useState('all');
+  const [errors, setErrors] = useState({});
 
   const [previewImage, setPreviewImage] = useState(null);
   const [imageFile, setImageFile] = useState(null);
@@ -49,13 +49,10 @@ const EventManagePage = () => {
     start_date: '',
     end_date: '',
     is_active: true,
+    is_featured: false,
   });
 
-  const [toast, setToast] = useState({ message: '', type: 'success' });
   const imageInputRef = useRef(null);
-
-  const showToast = (message, type = 'success') => setToast({ message, type });
-  const closeToast = () => setToast({ message: '', type: 'success' });
 
   const fetchEvents = async () => {
     setLoading(true);
@@ -65,7 +62,7 @@ const EventManagePage = () => {
       setEvents(data);
     } catch (error) {
       console.error('Lỗi tải sự kiện:', error);
-      showToast('Không tải được danh sách sự kiện!', 'error');
+      notify.error('Không tải được danh sách sự kiện!', 'Lỗi tải dữ liệu');
     } finally {
       setLoading(false);
     }
@@ -100,10 +97,11 @@ const EventManagePage = () => {
     setFormData({
       title: '', description: '', content: '',
       category: 'promotion', promotion_id: '',
-      start_date: '', end_date: '', is_active: true,
+      start_date: '', end_date: '', is_active: true, is_featured: false,
     });
     setPreviewImage(null);
     setImageFile(null);
+    setErrors({});
     setIsModalOpen(true);
   };
 
@@ -118,9 +116,11 @@ const EventManagePage = () => {
       start_date: event.start_date ? event.start_date.split('T')[0] : '',
       end_date: event.end_date ? event.end_date.split('T')[0] : '',
       is_active: !!event.is_active,
+      is_featured: event.is_featured === 1 || event.is_featured === true || false,
     });
     setPreviewImage(getImageUrl(event.image));
     setImageFile(null);
+    setErrors({});
     setIsModalOpen(true);
   };
 
@@ -129,6 +129,7 @@ const EventManagePage = () => {
     setEditingEvent(null);
     setPreviewImage(null);
     setImageFile(null);
+    setErrors({});
   };
 
   const handleChange = (e) => {
@@ -137,6 +138,7 @@ const EventManagePage = () => {
       ...prev,
       [name]: type === 'checkbox' ? checked : value,
     }));
+    setErrors(prev => ({ ...prev, [name]: '' }));
   };
 
   const handleImageUpload = (e) => {
@@ -150,35 +152,67 @@ const EventManagePage = () => {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Bạn có chắc muốn xóa sự kiện này?')) return;
+    const ok = await confirmDialog({
+      title: 'Xóa sự kiện?',
+      message: 'Bạn có chắc chắn muốn xóa sự kiện này không? Hành động này không thể hoàn tác.',
+      confirmText: 'Xóa sự kiện',
+      danger: true,
+    });
+    if (!ok) return;
+
     try {
       await eventApi.delete(id);
-      showToast('Đã xóa sự kiện!', 'success');
+      notify.success('Đã xóa sự kiện thành công!', 'Thành công');
       fetchEvents();
     } catch (error) {
-      showToast('Xóa sự kiện thất bại!', 'error');
+      notify.error('Xóa sự kiện thất bại!', 'Lỗi');
     }
   };
 
   const handleToggleActive = async (event) => {
     try {
       await eventApi.update(event.id, { is_active: !event.is_active });
+      notify.success('Cập nhật trạng thái sự kiện thành công!', 'Thành công');
       fetchEvents();
     } catch {
-      showToast('Không thể cập nhật trạng thái!', 'error');
+      notify.error('Không thể cập nhật trạng thái sự kiện!', 'Lỗi');
+    }
+  };
+
+  // Bật/tắt nhanh trạng thái hiển thị trang chủ của sự kiện
+  const handleToggleFeatured = async (event) => {
+    try {
+      const currentFeatured = event.is_featured === 1 || event.is_featured === true;
+      const payload = {
+        is_featured: currentFeatured ? 0 : 1
+      };
+      await eventApi.update(event.id, payload);
+      notify.success(
+        currentFeatured ? 'Đã ẩn sự kiện khỏi Trang chủ!' : 'Đã hiển thị sự kiện lên Trang chủ!',
+        'Thành công'
+      );
+      fetchEvents();
+    } catch (error) {
+      console.error('Lỗi toggle featured event:', error);
+      notify.error(error.response?.data?.message || 'Thao tác thất bại!', 'Lỗi');
     }
   };
 
   const handleSave = async () => {
-    if (!formData.title) {
-      showToast('Vui lòng nhập tiêu đề sự kiện!', 'error');
-      return;
+    const newErrors = {};
+    if (!formData.title.trim()) {
+      newErrors.title = 'Vui lòng nhập tiêu đề sự kiện';
     }
     if (formData.start_date && formData.end_date && formData.start_date > formData.end_date) {
-      showToast('Ngày bắt đầu phải nhỏ hơn ngày kết thúc!', 'error');
+      newErrors.end_date = 'Ngày kết thúc phải lớn hơn hoặc bằng ngày bắt đầu';
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
       return;
     }
 
+    setErrors({});
     setSaving(true);
     try {
       let imageUrl = editingEvent?.image || '';
@@ -194,21 +228,22 @@ const EventManagePage = () => {
         start_date: formData.start_date || null,
         end_date: formData.end_date || null,
         is_active: !!formData.is_active,
+        is_featured: formData.is_featured ? 1 : 0,
       };
 
       if (editingEvent) {
         await eventApi.update(editingEvent.id, payload);
-        showToast('Đã cập nhật sự kiện!', 'success');
+        notify.success('Đã cập nhật sự kiện thành công!', 'Thành công');
       } else {
         await eventApi.create(payload);
-        showToast('Đã thêm sự kiện mới!', 'success');
+        notify.success('Đã thêm sự kiện mới thành công!', 'Thành công');
       }
 
       handleCloseModal();
       fetchEvents();
     } catch (error) {
       console.error('Lỗi lưu sự kiện:', error);
-      showToast('Lưu sự kiện thất bại! ' + (error.response?.data?.message || ''), 'error');
+      notify.error('Lưu sự kiện thất bại! ' + (error.response?.data?.message || ''), 'Lỗi');
     } finally {
       setSaving(false);
     }
@@ -267,13 +302,14 @@ const EventManagePage = () => {
                 <th style={{ width: 140 }}>Mã KM</th>
                 <th style={{ width: 200 }}>Thời gian</th>
                 <th style={{ width: 110 }}>Trạng thái</th>
+                <th style={{ width: 130 }}>Hiện trang chủ</th>
                 <th style={{ width: 110 }}>Thao tác</th>
               </tr>
             </thead>
             <tbody>
               {filteredEvents.length === 0 ? (
                 <tr>
-                  <td colSpan="7" style={{ textAlign: 'center', padding: '30px', color: '#aaa' }}>
+                  <td colSpan="8" style={{ textAlign: 'center', padding: '30px', color: '#aaa' }}>
                     Chưa có sự kiện nào
                   </td>
                 </tr>
@@ -330,6 +366,20 @@ const EventManagePage = () => {
                       </button>
                     </td>
                     <td>
+                      <button
+                        type="button"
+                        onClick={() => handleToggleFeatured(event)}
+                        className={styles.toggleFeaturedBtn}
+                        title={(event.is_featured === 1 || event.is_featured === true) ? 'Tắt hiển thị trang chủ' : 'Bật hiển thị trang chủ'}
+                      >
+                        {(event.is_featured === 1 || event.is_featured === true) ? (
+                          <span className={styles.starActive}>⭐ Có</span>
+                        ) : (
+                          <span className={styles.starInactive}>☆ Không</span>
+                        )}
+                      </button>
+                    </td>
+                    <td>
                       <div className={styles.actionBtns}>
                         <button className={styles.editBtn} title="Sửa" onClick={() => handleEdit(event)}>
                           <MdEdit />
@@ -356,7 +406,7 @@ const EventManagePage = () => {
             </div>
 
             <div className={styles.modalBody}>
-              <form className={styles.form} onSubmit={(e) => e.preventDefault()}>
+              <form className={styles.form} onSubmit={(e) => e.preventDefault()} noValidate>
                 <div className={styles.formRow}>
                   <div className={styles.formGroup} style={{ flex: 2 }}>
                     <label>Tiêu đề *</label>
@@ -364,7 +414,9 @@ const EventManagePage = () => {
                       type="text" name="title"
                       value={formData.title} onChange={handleChange}
                       placeholder="VD: Ưu đãi học sinh sinh viên - Giảm 40%"
+                      className={errors.title ? 'inputErrorGlobal' : ''}
                     />
+                    {errors.title && <span className="errorTextGlobal">{errors.title}</span>}
                   </div>
                   <div className={styles.formGroup} style={{ flex: 1 }}>
                     <label>Danh mục *</label>
@@ -407,7 +459,9 @@ const EventManagePage = () => {
                     <input
                       type="date" name="end_date"
                       value={formData.end_date} onChange={handleChange}
+                      className={errors.end_date ? 'inputErrorGlobal' : ''}
                     />
+                    {errors.end_date && <span className="errorTextGlobal">{errors.end_date}</span>}
                   </div>
                   <div className={styles.formGroup}>
                     <label>Trạng thái</label>
@@ -419,6 +473,21 @@ const EventManagePage = () => {
                       <span>{formData.is_active ? 'Đang hiển thị' : 'Đã ẩn'}</span>
                     </label>
                   </div>
+                </div>
+
+                {/* Hiện trang chủ checkbox */}
+                <div className={styles.formGroup} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 5, marginBottom: 15 }}>
+                  <input
+                    type="checkbox"
+                    id="is_featured"
+                    name="is_featured"
+                    checked={formData.is_featured}
+                    onChange={handleChange}
+                    style={{ width: '18px', height: '18px', cursor: 'pointer', margin: 0 }}
+                  />
+                  <label htmlFor="is_featured" style={{ cursor: 'pointer', fontWeight: 600, userSelect: 'none', margin: 0 }}>
+                    ⭐ Hiển thị sự kiện này trên Trang chủ (Tối đa 4 sự kiện mỗi danh mục)
+                  </label>
                 </div>
 
                 <div className={styles.formGroup}>
@@ -477,8 +546,6 @@ const EventManagePage = () => {
           </div>
         </div>
       )}
-
-      <Toast message={toast.message} type={toast.type} onClose={closeToast} />
     </div>
   );
 };
