@@ -17,6 +17,45 @@
     font-size: 24px;
   }
 
+  .headerActions {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .filterWrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .filterLabel {
+    font-size: 14px;
+    font-weight: 600;
+    color: #4b5563;
+  }
+
+  .statusFilterSelect {
+    padding: 8px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 14px;
+    color: #1f2937;
+    background-color: white;
+    cursor: pointer;
+    outline: none;
+    transition: all 0.2s ease;
+
+    &:focus {
+      border-color: $color-primary;
+      box-shadow: 0 0 0 3px rgba($color-primary, 0.1);
+    }
+
+    &:hover {
+      border-color: #9ca3af;
+    }
+  }
+
   .addBtn {
     display: flex;
     align-items: center;
@@ -69,9 +108,10 @@
   }
 
   tbody tr {
+    cursor: pointer;
     transition: background-color 0.2s;
     &:hover {
-      background-color: #f9fafb;
+      background-color: #f3f4f6;
     }
   }
 
@@ -83,6 +123,46 @@
     border-radius: 4px;
     font-weight: bold;
     color: #111827;
+  }
+
+  .formatTag {
+    display: inline-block;
+    background-color: #f5f3ff;
+    border: 1px solid #ddd6fe;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-weight: bold;
+    color: #5b21b6;
+  }
+
+
+  .statusBadge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 9999px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+
+    &.statusUpcoming {
+      background-color: #eff6ff;
+      color: #1e40af;
+      border: 1px solid #bfdbfe;
+    }
+
+    &.statusOngoing {
+      background-color: #d1fae5;
+      color: #065f46;
+      border: 1px solid #a7f3d0;
+    }
+
+    &.statusEnded {
+      background-color: #fee2e2;
+      color: #991b1b;
+      border: 1px solid #fecaca;
+    }
   }
 
   .actionBtns {
@@ -230,6 +310,23 @@
     cursor: pointer;
     font-size: 14px;
     transition: all 0.2s;
+  }
+
+  .deleteBtnModal {
+    background-color: #ef4444;
+    border: 1px solid #ef4444;
+    color: white;
+    margin-right: auto;
+
+    &:hover {
+      background-color: darken(#ef4444, 8%);
+    }
+
+    &:disabled {
+      background-color: #fca5a5;
+      border-color: #fca5a5;
+      cursor: not-allowed;
+    }
   }
 
   .cancelBtn {

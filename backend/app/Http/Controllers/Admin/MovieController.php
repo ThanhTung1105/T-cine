@@ -34,10 +34,12 @@ class MovieController extends Controller
 
         $isFeatured = filter_var($request->is_featured, FILTER_VALIDATE_BOOLEAN);
         if ($isFeatured) {
-            $featuredCount = Movie::where('is_featured', true)->count();
+            $status = $request->status;
+            $featuredCount = Movie::where('status', $status)->where('is_featured', true)->count();
             if ($featuredCount >= 4) {
+                $statusText = $status === 'now_showing' ? 'đang chiếu' : ($status === 'coming_soon' ? 'sắp chiếu' : 'đã kết thúc');
                 return response()->json([
-                    'message' => 'Chỉ được hiển thị tối đa 4 phim nổi bật trên trang chủ. Vui lòng bỏ chọn phim khác trước.',
+                    'message' => "Chỉ được hiển thị tối đa 4 phim {$statusText} nổi bật trên trang chủ. Vui lòng bỏ chọn phim khác trước.",
                 ], 422);
             }
         }
@@ -77,10 +79,15 @@ class MovieController extends Controller
         if ($request->has('is_featured')) {
             $isFeatured = filter_var($request->is_featured, FILTER_VALIDATE_BOOLEAN);
             if ($isFeatured) {
-                $featuredCount = Movie::where('is_featured', true)->where('id', '!=', $id)->count();
+                $status = $request->status ?: $movie->status;
+                $featuredCount = Movie::where('status', $status)
+                    ->where('is_featured', true)
+                    ->where('id', '!=', $id)
+                    ->count();
                 if ($featuredCount >= 4) {
+                    $statusText = $status === 'now_showing' ? 'đang chiếu' : ($status === 'coming_soon' ? 'sắp chiếu' : 'đã kết thúc');
                     return response()->json([
-                        'message' => 'Chỉ được hiển thị tối đa 4 phim nổi bật trên trang chủ. Vui lòng bỏ chọn phim khác trước.',
+                        'message' => "Chỉ được hiển thị tối đa 4 phim {$statusText} nổi bật trên trang chủ. Vui lòng bỏ chọn phim khác trước.",
                     ], 422);
                 }
             }

@@ -14,6 +14,7 @@ class Showtime extends Model
         'room_id',
         'start_time',
         'end_time',
+        'projection_format_id',
     ];
 
     public function movie()
@@ -29,5 +30,10 @@ class Showtime extends Model
     public function bookings()
     {
         return $this->hasMany(Booking::class);
+    }
+
+    public function projectionFormat()
+    {
+        return $this->belongsTo(ProjectionFormat::class, 'projection_format_id');
     }
 }

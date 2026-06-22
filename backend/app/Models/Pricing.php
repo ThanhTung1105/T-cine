@@ -34,9 +34,16 @@ class Pricing extends Model
     public static function classifyDayType($dateTime): string
     {
         $date = $dateTime instanceof Carbon ? $dateTime : Carbon::parse($dateTime);
-
-        $holidays = (array) config('holidays.dates', []);
         $iso = $date->toDateString();
+
+        // Check database holidays table
+        $isHoliday = \App\Models\Holiday::where('date', $iso)->exists();
+        if ($isHoliday) {
+            return 'holiday';
+        }
+
+        // Fallback to config dates
+        $holidays = (array) config('holidays.dates', []);
         if (in_array($iso, $holidays, true)) {
             return 'holiday';
         }
@@ -45,10 +52,10 @@ class Pricing extends Model
     }
 
     /**
-     * Lấy giá vé theo loại ghế + thời điểm chiếu.
+     * Lấy giá vé theo loại ghế + thời điểm chiếu + định dạng chiếu.
      * Fallback: nếu không có row active → trả về 0.
      */
-    public static function resolve(string $seatType, $startTime): float
+    public static function resolve(string $seatType, $startTime, $projectionFormatId = null): float
     {
         $dayType = self::classifyDayType($startTime);
 
@@ -65,7 +72,14 @@ class Pricing extends Model
                 ->first();
         }
 
-        return $row ? (float) $row->price : 0.0;
+        $basePrice = $row ? (float) $row->price : 0.0;
+
+        $surcharge = 0.0;
+        if ($projectionFormatId) {
+            $surcharge = (float) \App\Models\ProjectionFormat::where('id', $projectionFormatId)->value('surcharge');
+        }
+
+        return $basePrice + $surcharge;
     }
 
     /**

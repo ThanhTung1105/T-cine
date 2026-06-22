@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { MdAdd, MdEdit, MdDelete, MdClose, MdCloudUpload } from 'react-icons/md';
+import { MdAdd, MdClose, MdCloudUpload } from 'react-icons/md';
 import comboApi from '../../../api/comboApi';
 import axiosClient from '../../../api/axiosClient';
 import { notify, confirmDialog } from '../../../utils/notify';
@@ -114,6 +114,7 @@ const ComboManagePage = () => {
     try {
       await comboApi.delete(id);
       notify.success('Đã xóa combo bắp nước thành công!', 'Thành công');
+      handleCloseModal();
       fetchCombos();
     } catch {
       notify.error('Xóa combo bắp nước thất bại!', 'Lỗi');
@@ -181,44 +182,48 @@ const ComboManagePage = () => {
         </button>
       </div>
 
-      <div className={styles.gridContainer}>
+      <div className={styles.tableContainer}>
         {loading ? (
-          <p style={{ textAlign: 'center', padding: '40px', color: '#aaa', gridColumn: '1/-1' }}>
-            Đang tải...
-          </p>
-        ) : combos.length === 0 ? (
-          <p style={{ textAlign: 'center', padding: '40px', color: '#aaa', gridColumn: '1/-1' }}>
-            Chưa có combo nào
-          </p>
+          <p style={{ textAlign: 'center', padding: '40px', color: '#aaa' }}>Đang tải...</p>
         ) : (
-          combos.map((combo) => (
-            <div key={combo.id} className={styles.comboCard}>
-              <div className={styles.comboImageWrap}>
-                {combo.image ? (
-                  <img src={getImageUrl(combo.image)} alt={combo.name} className={styles.comboImage} />
-                ) : (
-                  <div className={styles.comboImagePlaceholder}>No image</div>
-                )}
-              </div>
-              <div className={styles.comboBody}>
-                <h4 className={styles.comboName}>{combo.name}</h4>
-                {combo.description && (
-                  <p className={styles.comboDesc}>{combo.description}</p>
-                )}
-                <div className={styles.comboPrice}>
-                  {Number(combo.price).toLocaleString('vi-VN')} VNĐ
-                </div>
-                <div className={styles.cardActions}>
-                  <button className={styles.editBtn} onClick={() => handleEdit(combo)}>
-                    <MdEdit /> Sửa
-                  </button>
-                  <button className={styles.deleteBtn} onClick={() => handleDelete(combo.id)}>
-                    <MdDelete /> Xóa
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th style={{ width: 80 }}>STT</th>
+                <th style={{ width: 100 }}>Ảnh</th>
+                <th style={{ width: 220 }}>Tên Combo</th>
+                <th>Mô tả</th>
+                <th style={{ width: 180 }}>Giá</th>
+              </tr>
+            </thead>
+            <tbody>
+              {combos.length === 0 ? (
+                <tr>
+                  <td colSpan="5" style={{ textAlign: 'center', padding: '30px', color: '#aaa' }}>
+                    Chưa có combo nào
+                  </td>
+                </tr>
+              ) : (
+                combos.map((combo, idx) => (
+                  <tr key={combo.id} onClick={() => handleEdit(combo)}>
+                    <td>{idx + 1}</td>
+                    <td>
+                      {combo.image ? (
+                        <img src={getImageUrl(combo.image)} alt={combo.name} className={styles.comboThumb} />
+                      ) : (
+                        <div className={styles.comboThumb} style={{ background: '#333', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: '#888' }}>
+                          No image
+                        </div>
+                      )}
+                    </td>
+                    <td><strong>{combo.name}</strong></td>
+                    <td>{combo.description || <span style={{ color: '#999' }}>—</span>}</td>
+                    <td><span className={styles.priceBadge}>{Number(combo.price).toLocaleString('vi-VN')} VNĐ</span></td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
         )}
       </div>
 
@@ -291,11 +296,16 @@ const ComboManagePage = () => {
             </div>
 
             <div className={styles.modalFooter}>
-              <button className={styles.cancelBtn} onClick={handleCloseModal}>Hủy</button>
-              <button className={styles.saveBtn} onClick={handleSave} disabled={saving}>
-                {saving ? 'Đang lưu...' : editingCombo ? 'Cập Nhật' : 'Lưu Combo'}
-              </button>
-            </div>
+               {editingCombo && (
+                 <button type="button" className={styles.deleteBtnModal} onClick={() => handleDelete(editingCombo.id)} disabled={saving}>
+                   Xóa Combo
+                 </button>
+               )}
+               <button className={styles.cancelBtn} onClick={handleCloseModal}>Hủy</button>
+               <button className={styles.saveBtn} onClick={handleSave} disabled={saving}>
+                 {saving ? 'Đang lưu...' : editingCombo ? 'Cập Nhật' : 'Lưu Combo'}
+               </button>
+             </div>
           </div>
         </div>
       )}

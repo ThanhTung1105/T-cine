@@ -1,0 +1,261 @@
+// CẤU HÌNH SƠ ĐỒ CƠ SỞ DỮ LIỆU T-CINE (15 BẢNG NGHIỆP VỤ)
+// Copy toàn bộ mã này dán vào trang https://dbdiagram.io để tự động vẽ sơ đồ ERD
+
+// Định nghĩa các kiểu Enum
+Enum seat_type {
+  normal
+  vip
+  couple
+}
+
+Enum seat_status {
+  active
+  broken
+}
+
+Enum movie_status {
+  now_showing
+  coming_soon
+  ended
+}
+
+Enum user_role {
+  admin
+  customer
+}
+
+Enum booking_status {
+  pending
+  paid
+  cancelled
+}
+
+Enum payment_method {
+  vnpay
+  momo
+  zalopay
+  counter
+}
+
+Enum payment_status {
+  pending
+  success
+  failed
+}
+
+Enum pricing_seat {
+  normal
+  vip
+  couple
+}
+
+Enum pricing_day {
+  weekday
+  weekend
+  holiday
+}
+
+// Định nghĩa các bảng dữ liệu
+Table cinemas {
+  id int [pk, increment, note: 'Mã rạp']
+  name varchar(255) [not null, note: 'Tên cụm rạp']
+  address varchar(255) [not null, note: 'Địa chỉ rạp']
+  city varchar(100) [not null, note: 'Thành phố']
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table rooms {
+  id int [pk, increment, note: 'Mã phòng chiếu']
+  cinema_id int [ref: > cinemas.id, note: 'Mã rạp trực thuộc']
+  name varchar(100) [not null, note: 'Tên phòng (VD: Phòng 01)']
+  capacity int [not null, note: 'Sức chứa ghế tối đa']
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table seats {
+  id int [pk, increment, note: 'Mã ghế']
+  room_id int [ref: > rooms.id, note: 'Mã phòng chiếu']
+  row varchar(10) [not null, note: 'Hàng ghế (VD: A, B, C)']
+  column_num int [not null, note: 'Số cột ghế (VD: 1, 2, 3)']
+  type seat_type [not null, default: 'normal', note: 'Loại ghế (Thường/VIP/Đôi)']
+  status seat_status [not null, default: 'active', note: 'Trạng thái hoạt động']
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table movies {
+  id int [pk, increment, note: 'Mã phim']
+  title varchar(255) [not null, note: 'Tên phim']
+  slug varchar(255) [unique, not null, note: 'Đường dẫn SEO']
+  description text [note: 'Mô tả nội dung phim']
+  poster varchar(255) [not null, note: 'Đường dẫn ảnh poster']
+  banner varchar(255) [not null, note: 'Đường dẫn ảnh banner']
+  trailer_url varchar(255) [note: 'Link trailer Youtube']
+  genre varchar(100) [not null, note: 'Thể loại']
+  director varchar(100) [not null, note: 'Đạo diễn']
+  cast_info varchar(255) [not null, note: 'Dàn diễn viên']
+  duration int [not null, note: 'Thời lượng (phút)']
+  age_rating varchar(10) [not null, note: 'Độ tuổi quy định (C13, C16, C18...)']
+  rating decimal(3,1) [default: 0.0, note: 'Điểm đánh giá phim']
+  release_date date [not null, note: 'Ngày khởi chiếu']
+  status movie_status [not null, note: 'Trạng thái phát hành']
+  is_featured boolean [not null, default: false, note: 'Ghim phim nổi bật lên trang chủ (tối đa 4 phim)']
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table showtimes {
+  id int [pk, increment, note: 'Mã suất chiếu']
+  movie_id int [ref: > movies.id, note: 'Mã phim']
+  room_id int [ref: > rooms.id, note: 'Mã phòng chiếu']
+  projection_format_id int [ref: > projection_formats.id, note: 'Định dạng suất chiếu']
+  start_time datetime [not null, note: 'Giờ bắt đầu']
+  end_time datetime [not null, note: 'Giờ kết thúc (tính từ start_time + movie.duration + time_cleanup)']
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table users {
+  id int [pk, increment, note: 'Mã tài khoản']
+  name varchar(255) [not null, note: 'Họ tên']
+  email varchar(255) [unique, not null, note: 'Email tài khoản']
+  password varchar(255) [not null, note: 'Mật khẩu đã mã hóa']
+  phone varchar(20) [not null, note: 'Số điện thoại']
+  role user_role [not null, default: 'customer', note: 'Vai trò (Admin/Khách hàng)']
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table bookings {
+  id int [pk, increment, note: 'Mã đơn đặt vé']
+  booking_code varchar(50) [unique, not null, note: 'Mã tra cứu đặt vé']
+  user_id int [ref: > users.id, note: 'Người đặt vé']
+  showtime_id int [ref: > showtimes.id, note: 'Suất chiếu']
+  promotion_id int [ref: > promotions.id, null, note: 'Mã giảm giá áp dụng (nếu có)']
+  total_amount decimal(10,2) [not null, note: 'Tổng tiền gốc (vé + combo)']
+  discount_amount decimal(10,2) [not null, default: 0.0, note: 'Số tiền giảm giá']
+  final_amount decimal(10,2) [not null, note: 'Số tiền thực tế thanh toán']
+  status booking_status [not null, default: 'pending', note: 'Trạng thái đơn (Chờ thanh toán/Đã mua/Đã hủy)']
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table tickets {
+  id int [pk, increment, note: 'Mã vé']
+  booking_id int [ref: > bookings.id, note: 'Đơn đặt vé']
+  seat_id int [ref: > seats.id, note: 'Mã ghế ngồi']
+  seat_label varchar(10) [not null, note: 'Nhãn ghế tại thời điểm đặt (VD: A5)']
+  seat_type varchar(20) [not null, note: 'Loại ghế tại thời điểm đặt']
+  price decimal(10,2) [not null, note: 'Giá vé thực tế áp dụng']
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table combos {
+  id int [pk, increment, note: 'Mã combo']
+  name varchar(255) [not null, note: 'Tên combo bắp nước']
+  description text [note: 'Mô tả chi tiết combo']
+  price decimal(10,2) [not null, note: 'Giá bán combo']
+  image varchar(255) [note: 'Hình ảnh sản phẩm']
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table booking_combos {
+  id int [pk, increment, note: 'Mã dòng combo đặt']
+  booking_id int [ref: > bookings.id, note: 'Đơn đặt vé']
+  combo_id int [ref: > combos.id, note: 'Mã combo']
+  quantity int [not null, note: 'Số lượng mua']
+  unit_price decimal(10,2) [not null, note: 'Đơn giá combo tại thời điểm đặt']
+}
+
+Table payments {
+  id int [pk, increment, note: 'Mã giao dịch']
+  booking_id int [ref: - bookings.id, unique, note: 'Đơn đặt vé thanh toán (Quan hệ 1-1)']
+  method payment_method [not null, note: 'Hình thức (VNPay/MoMo/ZaloPay/Tại quầy)']
+  transaction_code varchar(100) [note: 'Mã giao dịch từ nhà cung cấp thanh toán']
+  amount decimal(10,2) [not null, note: 'Số tiền thanh toán']
+  status payment_status [not null, default: 'pending', note: 'Trạng thái giao dịch']
+  paid_at timestamp [null, note: 'Thời gian hoàn tất giao dịch']
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table promotions {
+  id int [pk, increment, note: 'Mã khuyến mãi']
+  code varchar(50) [unique, not null, note: 'Mã voucher']
+  discount_percent int [not null, note: 'Tỉ lệ giảm giá (%)']
+  max_discount decimal(10,2) [not null, note: 'Số tiền giảm tối đa']
+  valid_from date [not null, note: 'Ngày bắt đầu áp dụng']
+  valid_to date [not null, note: 'Ngày hết hạn']
+  usage_limit int [not null, note: 'Giới hạn tổng lượt sử dụng']
+  used_count int [not null, default: 0, note: 'Số lượt đã sử dụng']
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table banners {
+  id int [pk, increment, note: 'Mã banner']
+  title varchar(255) [not null, note: 'Tiêu đề banner']
+  image_url varchar(255) [not null, note: 'Đường dẫn ảnh banner']
+  link_url varchar(255) [note: 'Link chuyển hướng khi click']
+  position int [not null, default: 0, note: 'Vị trí hiển thị']
+  is_active boolean [not null, default: true, note: 'Trạng thái hoạt động']
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table pricings {
+  id int [pk, increment, note: 'Mã bảng giá']
+  seat_type pricing_seat [not null, note: 'Loại ghế (normal/vip/couple)']
+  day_type pricing_day [not null, note: 'Loại ngày (weekday/weekend/holiday)']
+  price decimal(10,2) [not null, note: 'Giá vé áp dụng']
+  is_active boolean [not null, default: true, note: 'Trạng thái hoạt động']
+  created_at timestamp
+  updated_at timestamp
+  
+  Note: 'Ràng buộc duy nhất trên cặp (seat_type, day_type) tạo ma trận giá vé 3x3'
+}
+
+Table events {
+  id int [pk, increment, note: 'Mã sự kiện']
+  title varchar(255) [not null, note: 'Tiêu đề tin tức/sự kiện']
+  slug varchar(255) [unique, not null, note: 'Đường dẫn SEO']
+  description text [note: 'Mô tả ngắn']
+  content text [note: 'Nội dung chi tiết (HTML)']
+  image varchar(255) [note: 'Hình ảnh sự kiện']
+  category varchar(255) [not null, default: 'promotion', note: 'Phân loại (promotion/news)']
+  promotion_id int [ref: > promotions.id, null, note: 'Mã giảm giá đính kèm (nếu có)']
+  start_date date [null, note: 'Ngày bắt đầu hiển thị']
+  end_date date [null, note: 'Ngày kết thúc hiển thị']
+  is_active boolean [not null, default: true, note: 'Trạng thái hoạt động']
+  is_featured boolean [not null, default: false, note: 'Ghim sự kiện nổi bật lên trang chủ (tối đa 4 sự kiện/danh mục)']
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table holidays {
+  id int [pk, increment, note: 'Mã ngày lễ']
+  date date [unique, not null, note: 'Ngày nghỉ lễ']
+  name varchar(255) [note: 'Tên ngày lễ']
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table projection_formats {
+  id int [pk, increment, note: 'Mã định dạng']
+  name varchar(255) [unique, not null, note: 'Tên định dạng (VD: 2D Vietsub, 3D...)']
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table room_projection_format {
+  room_id int [ref: > rooms.id, note: 'Mã phòng chiếu']
+  projection_format_id int [ref: > projection_formats.id, note: 'Mã định dạng']
+  
+  Indexes {
+    (room_id, projection_format_id) [pk]
+  }
+}

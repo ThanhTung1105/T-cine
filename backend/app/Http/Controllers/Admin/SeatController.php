@@ -172,6 +172,318 @@ class SeatController extends Controller
     }
 
     /**
+     * POST /api/admin/cinemas/{cinemaId}/rooms/{roomId}/seats/bulk-update
+     * Cập nhật hàng loạt (loại hoặc trạng thái) cho nhiều ghế.
+     */
+    public function bulkUpdateSeats(Request $request, $cinemaId, $roomId)
+    {
+        $request->validate([
+            'ids'    => 'required|array',
+            'ids.*'  => 'integer',
+            'type'   => 'nullable|in:normal,vip',
+            'status' => 'nullable|in:active,broken',
+        ]);
+
+        $room = Room::where('cinema_id', $cinemaId)->findOrFail($roomId);
+        $ids = $request->input('ids');
+        $type = $request->input('type');
+        $status = $request->input('status');
+
+        $result = DB::transaction(function () use ($room, $ids, $type, $status) {
+            // Check if any of these seats has tickets
+            $hasTickets = DB::table('tickets')
+                ->whereIn('seat_id', $ids)
+                ->exists();
+
+            if ($hasTickets) {
+                return [
+                    'success' => false,
+                    'message' => 'Không thể thay đổi loại hoặc trạng thái vì một số ghế đã có vé đặt.',
+                    'code' => 422
+                ];
+            }
+
+            // Find matching seats
+            $seats = $room->seats()->whereIn('id', $ids)->get();
+
+            foreach ($seats as $seat) {
+                // If we are changing type, we must make sure the seat is not a couple seat.
+                // Couple seats cannot be directly converted to normal/vip using bulk update (they must be split first).
+                if ($type !== null) {
+                    if ($seat->type === 'couple') {
+                        return [
+                            'success' => false,
+                            'message' => 'Không thể trực tiếp đổi loại ghế đôi. Vui lòng tách ghế trước.',
+                            'code' => 422
+                        ];
+                    }
+                    if ($seat->status === 'broken') {
+                        return [
+                            'success' => false,
+                            'message' => 'Không thể thay đổi loại của ghế đang bị hỏng. Vui lòng đặt hoạt động lại trước.',
+                            'code' => 422
+                        ];
+                    }
+                    $seat->type = $type;
+                }
+                
+                if ($status !== null) {
+                    $seat->status = $status;
+                }
+
+                $seat->save();
+            }
+
+            // Check capacity limit
+            $capacity = (int) $room->capacity;
+            $seatsList = $room->seats()->get();
+            $effectiveSeats = $seatsList->whereIn('type', ['normal', 'vip'])->count()
+                + ($seatsList->where('type', 'couple')->count() * 2);
+
+            if ($effectiveSeats > $capacity) {
+                return [
+                    'success' => false,
+                    'message' => "Tổng chỗ ngồi ({$effectiveSeats} chỗ) vượt quá sức chứa phòng ({$capacity}).",
+                    'code' => 422
+                ];
+            }
+
+            return ['success' => true];
+        });
+
+        if (!$result['success']) {
+            return response()->json([
+                'message' => $result['message'],
+            ], $result['code']);
+        }
+
+        $seats = $room->seats()->orderBy('row')->orderBy('column_num')->get();
+
+        return response()->json([
+            'message' => 'Cập nhật ghế hàng loạt thành công',
+            'data'    => [
+                'seats' => $seats,
+            ],
+        ]);
+    }
+
+    /**
+     * POST /api/admin/cinemas/{cinemaId}/rooms/{roomId}/seats/merge
+     * Ghép 2 ghế đơn liền kề cùng hàng thành 1 ghế đôi.
+     */
+    public function mergeSeats(Request $request, $cinemaId, $roomId)
+    {
+        $request->validate([
+            'seat_ids'   => 'required|array|size:2',
+            'seat_ids.*' => 'integer',
+        ]);
+
+        $room = Room::where('cinema_id', $cinemaId)->findOrFail($roomId);
+        $seatIds = $request->input('seat_ids');
+
+        $result = DB::transaction(function () use ($room, $seatIds) {
+            $seats = $room->seats()->whereIn('id', $seatIds)->get();
+
+            if ($seats->count() !== 2) {
+                return [
+                    'success' => false,
+                    'message' => 'Vui lòng chọn chính xác 2 ghế của phòng này.',
+                    'code' => 422
+                ];
+            }
+
+            $seat1 = $seats->first();
+            $seat2 = $seats->last();
+
+            // 1. Must be in the same row
+            if ($seat1->row !== $seat2->row) {
+                return [
+                    'success' => false,
+                    'message' => 'Hai ghế được chọn phải nằm cùng một hàng.',
+                    'code' => 422
+                ];
+            }
+
+            // 2. Must be single seats (normal or vip)
+            if ($seat1->type === 'couple' || $seat2->type === 'couple') {
+                return [
+                    'success' => false,
+                    'message' => 'Chỉ có thể ghép hai ghế đơn thường hoặc VIP.',
+                    'code' => 422
+                ];
+            }
+
+            // 2.5. Must not be broken
+            if ($seat1->status === 'broken' || $seat2->status === 'broken') {
+                return [
+                    'success' => false,
+                    'message' => 'Không thể ghép ghế đang bị hỏng. Vui lòng đặt hoạt động lại trước.',
+                    'code' => 422
+                ];
+            }
+
+            // 3. Columns must be adjacent
+            if (abs($seat1->column_num - $seat2->column_num) !== 1) {
+                return [
+                    'success' => false,
+                    'message' => 'Hai ghế được chọn phải liền kề nhau.',
+                    'code' => 422
+                ];
+            }
+
+            // 4. Must not have any tickets
+            $hasTickets = DB::table('tickets')
+                ->whereIn('seat_id', $seatIds)
+                ->exists();
+
+            if ($hasTickets) {
+                return [
+                    'success' => false,
+                    'message' => 'Không thể ghép ghế vì ghế được chọn đã có vé đặt.',
+                    'code' => 422
+                ];
+            }
+
+            // Sort so we know which is left (smaller column) and which is right (larger column)
+            $leftSeat = $seat1->column_num < $seat2->column_num ? $seat1 : $seat2;
+            $rightSeat = $seat1->column_num > $seat2->column_num ? $seat1 : $seat2;
+
+            // Delete the right seat
+            $rightSeat->delete();
+
+            // Update the left seat to couple
+            $leftSeat->type = 'couple';
+            $leftSeat->save();
+
+            // Check capacity limit
+            $capacity = (int) $room->capacity;
+            $seatsList = $room->seats()->get();
+            $effectiveSeats = $seatsList->whereIn('type', ['normal', 'vip'])->count()
+                + ($seatsList->where('type', 'couple')->count() * 2);
+
+            if ($effectiveSeats > $capacity) {
+                return [
+                    'success' => false,
+                    'message' => "Tổng chỗ ngồi ({$effectiveSeats} chỗ) vượt quá sức chứa phòng ({$capacity}).",
+                    'code' => 422
+                ];
+            }
+
+            return ['success' => true];
+        });
+
+        if (!$result['success']) {
+            return response()->json([
+                'message' => $result['message'],
+            ], $result['code']);
+        }
+
+        $seats = $room->seats()->orderBy('row')->orderBy('column_num')->get();
+
+        return response()->json([
+            'message' => 'Ghép ghế đôi thành công',
+            'data'    => [
+                'seats' => $seats,
+            ],
+        ]);
+    }
+
+    /**
+     * POST /api/admin/cinemas/{cinemaId}/rooms/{roomId}/seats/split
+     * Tách 1 ghế đôi thành 2 ghế đơn.
+     */
+    public function splitSeat(Request $request, $cinemaId, $roomId)
+    {
+        $request->validate([
+            'seat_id' => 'required|integer',
+        ]);
+
+        $room = Room::where('cinema_id', $cinemaId)->findOrFail($roomId);
+        $seatId = $request->input('seat_id');
+
+        $result = DB::transaction(function () use ($room, $seatId) {
+            $seat = $room->seats()->findOrFail($seatId);
+
+            if ($seat->type !== 'couple') {
+                return [
+                    'success' => false,
+                    'message' => 'Ghế được chọn không phải là ghế đôi.',
+                    'code' => 422
+                ];
+            }
+
+            // 1.5. Must not be broken
+            if ($seat->status === 'broken') {
+                return [
+                    'success' => false,
+                    'message' => 'Không thể tách ghế đôi đang bị hỏng. Vui lòng đặt hoạt động lại trước.',
+                    'code' => 422
+                ];
+            }
+
+            // Check if the seat has tickets
+            if ($seat->tickets()->exists()) {
+                return [
+                    'success' => false,
+                    'message' => 'Không thể tách ghế đôi vì ghế này đã có vé đặt.',
+                    'code' => 422
+                ];
+            }
+
+            // Create the adjacent seat (column_num + 1)
+            $adjacentCol = $seat->column_num + 1;
+            $adjacentExists = $room->seats()
+                ->where('row', $seat->row)
+                ->where('column_num', $adjacentCol)
+                ->exists();
+
+            if (!$adjacentExists) {
+                $room->seats()->create([
+                    'row'        => $seat->row,
+                    'column_num' => $adjacentCol,
+                    'type'       => 'normal',
+                    'status'     => 'active',
+                ]);
+            }
+
+            // Update current seat to normal
+            $seat->type = 'normal';
+            $seat->save();
+
+            // Check capacity limit
+            $capacity = (int) $room->capacity;
+            $seatsList = $room->seats()->get();
+            $effectiveSeats = $seatsList->whereIn('type', ['normal', 'vip'])->count()
+                + ($seatsList->where('type', 'couple')->count() * 2);
+
+            if ($effectiveSeats > $capacity) {
+                return [
+                    'success' => false,
+                    'message' => "Tổng chỗ ngồi ({$effectiveSeats} chỗ) vượt quá sức chứa phòng ({$capacity}).",
+                    'code' => 422
+                ];
+            }
+
+            return ['success' => true];
+        });
+
+        if (!$result['success']) {
+            return response()->json([
+                'message' => $result['message'],
+            ], $result['code']);
+        }
+
+        $seats = $room->seats()->orderBy('row')->orderBy('column_num')->get();
+
+        return response()->json([
+            'message' => 'Tách ghế thành công',
+            'data'    => [
+                'seats' => $seats,
+            ],
+        ]);
+    }
+
+    /**
      * DELETE /api/admin/cinemas/{cinemaId}/rooms/{roomId}/seats
      * Xoá toàn bộ ghế của phòng (reset sơ đồ).
      * KHÔNG đụng tới capacity vì đó là thuộc tính cố định của phòng.

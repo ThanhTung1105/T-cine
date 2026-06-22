@@ -59,4 +59,51 @@ class PricingController extends Controller
             'matrix'  => Pricing::asMatrix(),
         ]);
     }
+
+    /**
+     * GET /api/admin/holidays
+     * Lấy danh sách ngày lễ.
+     */
+    public function getHolidays()
+    {
+        $holidays = \App\Models\Holiday::orderBy('date', 'asc')->get();
+        return response()->json([
+            'data' => $holidays,
+        ]);
+    }
+
+    /**
+     * POST /api/admin/holidays
+     * Thêm ngày lễ mới.
+     */
+    public function saveHoliday(Request $request)
+    {
+        $data = $request->validate([
+            'date' => 'required|date|unique:holidays,date',
+            'name' => 'nullable|string|max:255',
+        ], [
+            'date.unique' => 'Ngày này đã được cấu hình là ngày lễ rồi.',
+        ]);
+
+        $holiday = \App\Models\Holiday::create($data);
+
+        return response()->json([
+            'message' => 'Thêm ngày lễ thành công',
+            'data'    => $holiday,
+        ], 201);
+    }
+
+    /**
+     * DELETE /api/admin/holidays/{id}
+     * Xóa ngày lễ.
+     */
+    public function deleteHoliday($id)
+    {
+        $holiday = \App\Models\Holiday::findOrFail($id);
+        $holiday->delete();
+
+        return response()->json([
+            'message' => 'Xóa ngày lễ thành công',
+        ]);
+    }
 }

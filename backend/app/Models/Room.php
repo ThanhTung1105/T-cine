@@ -29,4 +29,9 @@ class Room extends Model
     {
         return $this->hasMany(Showtime::class);
     }
+
+    public function projectionFormats()
+    {
+        return $this->belongsToMany(ProjectionFormat::class, 'room_projection_format');
+    }
 }

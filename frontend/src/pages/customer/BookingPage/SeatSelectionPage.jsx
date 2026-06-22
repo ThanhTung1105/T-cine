@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import showtimeApi from '../../../api/showtimeApi';
 import useBookingStore from '../../../store/useBookingStore';
+import { notify } from '../../../utils/notify';
 import styles from './SeatSelectionPage.module.scss';
 
 const STORAGE_URL = import.meta.env.VITE_STORAGE_URL || 'http://localhost:8000/storage';
@@ -76,6 +77,11 @@ const SeatSelectionPage = () => {
 
   const handleClickSeat = (seat) => {
     if (seat.is_booked || seat.status === 'maintenance') return;
+    const selected = isSelected(seat.id);
+    if (!selected && selectedSeats.length >= 8) {
+      notify.warning('Bạn chỉ được chọn tối đa 8 ghế');
+      return;
+    }
     toggleSeat(seat);
   };
 

@@ -14,7 +14,7 @@ class ShowtimeController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Showtime::with(['movie', 'room.cinema']);
+        $query = Showtime::with(['movie', 'room.cinema', 'projectionFormat']);
 
         if ($request->has('movie_id')) {
             $query->where('movie_id', $request->movie_id);
@@ -36,16 +36,28 @@ class ShowtimeController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'movie_id'   => 'required|exists:movies,id',
-            'room_id'    => 'required|exists:rooms,id',
-            'start_time' => 'required|date',
-            'end_time'   => 'sometimes|date|after:start_time',
+            'movie_id'             => 'required|exists:movies,id',
+            'room_id'              => 'required|exists:rooms,id',
+            'start_time'           => 'required|date',
+            'end_time'             => 'sometimes|date|after:start_time',
+            'projection_format_id' => 'required|exists:projection_formats,id',
         ]);
 
         // Tự động lấy duration từ Movie và tính end_time theo đúng múi giờ local/UTC+7 của hệ thống
         $movie = \App\Models\Movie::findOrFail($data['movie_id']);
         $duration = $movie->duration ?: 120;
         $startTime = new \DateTime($data['start_time']);
+
+        $now = new \DateTime();
+        if ($startTime < $now) {
+            return response()->json([
+                'message' => 'Lịch chiếu không hợp lệ!',
+                'errors' => [
+                    'start_time' => ['Thời gian bắt đầu chiếu phải lớn hơn hoặc bằng thời gian hiện tại.']
+                ]
+            ], 422);
+        }
+
         $endTime = clone $startTime;
         $endTime->modify("+{$duration} minutes");
         $data['end_time'] = $endTime->format('Y-m-d H:i:s');
@@ -72,7 +84,7 @@ class ShowtimeController extends Controller
         }
 
         $showtime = Showtime::create($data);
-        $showtime->load(['movie', 'room.cinema']);
+        $showtime->load(['movie', 'room.cinema', 'projectionFormat']);
 
         return response()->json([
             'message' => 'Thêm suất chiếu thành công',
@@ -89,10 +101,11 @@ class ShowtimeController extends Controller
         $showtime = Showtime::findOrFail($id);
 
         $data = $request->validate([
-            'movie_id'   => 'sometimes|exists:movies,id',
-            'room_id'    => 'sometimes|exists:rooms,id',
-            'start_time' => 'sometimes|date',
-            'end_time'   => 'sometimes|date|after:start_time',
+            'movie_id'             => 'sometimes|exists:movies,id',
+            'room_id'              => 'sometimes|exists:rooms,id',
+            'start_time'           => 'sometimes|date',
+            'end_time'             => 'sometimes|date|after:start_time',
+            'projection_format_id' => 'sometimes|exists:projection_formats,id',
         ]);
 
         $movieId = $data['movie_id'] ?? $showtime->movie_id;
@@ -103,6 +116,22 @@ class ShowtimeController extends Controller
         $movie = \App\Models\Movie::findOrFail($movieId);
         $duration = $movie->duration ?: 120;
         $startTime = new \DateTime($startTimeStr);
+
+        if (isset($data['start_time'])) {
+            $origTime = new \DateTime($showtime->start_time);
+            if ($startTime->getTimestamp() !== $origTime->getTimestamp()) {
+                $now = new \DateTime();
+                if ($startTime < $now) {
+                    return response()->json([
+                        'message' => 'Lịch chiếu không hợp lệ!',
+                        'errors' => [
+                            'start_time' => ['Thời gian bắt đầu chiếu mới phải lớn hơn hoặc bằng thời gian hiện tại.']
+                        ]
+                    ], 422);
+                }
+            }
+        }
+
         $endTime = clone $startTime;
         $endTime->modify("+{$duration} minutes");
         
@@ -135,7 +164,7 @@ class ShowtimeController extends Controller
 
         return response()->json([
             'message' => 'Cập nhật suất chiếu thành công',
-            'data'    => $showtime->fresh()->load(['movie', 'room.cinema']),
+            'data'    => $showtime->fresh()->load(['movie', 'room.cinema', 'projectionFormat']),
         ]);
     }
 

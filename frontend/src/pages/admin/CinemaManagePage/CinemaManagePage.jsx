@@ -106,7 +106,17 @@ const CinemaManagePage = () => {
       fetchCinemas();
     } catch (e) {
       console.error('[CinemaManagePage] save error:', e);
-      notify.error(getErrorMessage(e), 'Lưu rạp thất bại');
+      if (e.response?.status === 422 && e.response?.data?.errors) {
+        const backendErrors = e.response.data.errors;
+        const newErrors = {};
+        Object.keys(backendErrors).forEach((key) => {
+          newErrors[key] = Array.isArray(backendErrors[key]) ? backendErrors[key][0] : backendErrors[key];
+        });
+        setErrors(newErrors);
+        notify.error('Thông tin rạp chiếu chưa hợp lệ!', 'Lưu rạp thất bại');
+      } else {
+        notify.error(getErrorMessage(e), 'Lưu rạp thất bại');
+      }
     } finally {
       setSaving(false);
     }

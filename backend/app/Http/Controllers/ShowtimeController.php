@@ -14,7 +14,7 @@ class ShowtimeController extends Controller
      */
     public function byMovie($movieId, Request $request)
     {
-        $query = Showtime::with(['room.cinema'])
+        $query = Showtime::with(['room.cinema', 'projectionFormat'])
             ->where('movie_id', $movieId);
 
         if ($request->has('date')) {
@@ -34,12 +34,13 @@ class ShowtimeController extends Controller
                 'cinema' => $cinema,
                 'showtimes' => $showtimes->map(function ($st) {
                     return [
-                        'id'         => $st->id,
-                        'start_time' => $st->start_time,
-                        'end_time'   => $st->end_time,
+                        'id'                => $st->id,
+                        'start_time'        => $st->start_time,
+                        'end_time'          => $st->end_time,
+                        'projection_format' => $st->projectionFormat ? $st->projectionFormat->name : null,
                         // Giá tham khảo cho FE hiển thị "từ X VND" — luôn dùng giá ghế thường
-                        'from_price' => Pricing::resolve('normal', $st->start_time),
-                        'room'       => $st->room->only(['id', 'name']),
+                        'from_price'        => Pricing::resolve('normal', $st->start_time, $st->projection_format_id),
+                        'room'              => $st->room->only(['id', 'name']),
                     ];
                 })->values(),
             ];
@@ -59,7 +60,7 @@ class ShowtimeController extends Controller
             ->where('created_at', '<', now()->subMinutes(5))
             ->update(['status' => 'cancelled']);
 
-        $showtime = Showtime::with(['movie', 'room.cinema', 'room.seats'])
+        $showtime = Showtime::with(['movie', 'room.cinema', 'room.seats', 'projectionFormat'])
             ->findOrFail($id);
 
         // Lấy danh sách seat_id đã được đặt trong suất chiếu này
@@ -74,10 +75,11 @@ class ShowtimeController extends Controller
 
         // Tính day_type 1 lần, lookup giá theo loại ghế từ bảng pricings
         $dayType = Pricing::classifyDayType($showtime->start_time);
+        $showtimeFormatId = $showtime->projection_format_id;
         $priceByType = [
-            'normal' => Pricing::resolve('normal', $showtime->start_time),
-            'vip'    => Pricing::resolve('vip',    $showtime->start_time),
-            'couple' => Pricing::resolve('couple', $showtime->start_time),
+            'normal' => Pricing::resolve('normal', $showtime->start_time, $showtimeFormatId),
+            'vip'    => Pricing::resolve('vip',    $showtime->start_time, $showtimeFormatId),
+            'couple' => Pricing::resolve('couple', $showtime->start_time, $showtimeFormatId),
         ];
 
         // Gắn trạng thái + giá cho từng ghế
@@ -97,7 +99,10 @@ class ShowtimeController extends Controller
             'data' => [
                 'showtime' => array_merge(
                     $showtime->only(['id', 'start_time', 'end_time']),
-                    ['day_type' => $dayType],
+                    [
+                        'projection_format' => $showtime->projectionFormat ? $showtime->projectionFormat->name : null,
+                        'day_type' => $dayType
+                    ],
                 ),
                 'movie'        => $showtime->movie,
                 'room'         => $showtime->room->only(['id', 'name', 'capacity']),

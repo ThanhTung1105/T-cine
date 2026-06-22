@@ -163,6 +163,7 @@ const EventManagePage = () => {
     try {
       await eventApi.delete(id);
       notify.success('Đã xóa sự kiện thành công!', 'Thành công');
+      handleCloseModal();
       fetchEvents();
     } catch (error) {
       notify.error('Xóa sự kiện thất bại!', 'Lỗi');
@@ -303,19 +304,18 @@ const EventManagePage = () => {
                 <th style={{ width: 200 }}>Thời gian</th>
                 <th style={{ width: 110 }}>Trạng thái</th>
                 <th style={{ width: 130 }}>Hiện trang chủ</th>
-                <th style={{ width: 110 }}>Thao tác</th>
               </tr>
             </thead>
             <tbody>
               {filteredEvents.length === 0 ? (
                 <tr>
-                  <td colSpan="8" style={{ textAlign: 'center', padding: '30px', color: '#aaa' }}>
+                  <td colSpan="7" style={{ textAlign: 'center', padding: '30px', color: '#aaa' }}>
                     Chưa có sự kiện nào
                   </td>
                 </tr>
               ) : (
                 filteredEvents.map((event) => (
-                  <tr key={event.id}>
+                  <tr key={event.id} onClick={() => handleEdit(event)} style={{ cursor: 'pointer' }}>
                     <td>
                       {event.image ? (
                         <img
@@ -358,7 +358,10 @@ const EventManagePage = () => {
                     <td>
                       <button
                         className={`${styles.statusToggle} ${event.is_active ? styles.active : styles.inactive}`}
-                        onClick={() => handleToggleActive(event)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleToggleActive(event);
+                        }}
                         title="Bật/Tắt hiển thị"
                       >
                         {event.is_active ? <MdVisibility /> : <MdVisibilityOff />}
@@ -368,7 +371,10 @@ const EventManagePage = () => {
                     <td>
                       <button
                         type="button"
-                        onClick={() => handleToggleFeatured(event)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleToggleFeatured(event);
+                        }}
                         className={styles.toggleFeaturedBtn}
                         title={(event.is_featured === 1 || event.is_featured === true) ? 'Tắt hiển thị trang chủ' : 'Bật hiển thị trang chủ'}
                       >
@@ -378,16 +384,6 @@ const EventManagePage = () => {
                           <span className={styles.starInactive}>☆ Không</span>
                         )}
                       </button>
-                    </td>
-                    <td>
-                      <div className={styles.actionBtns}>
-                        <button className={styles.editBtn} title="Sửa" onClick={() => handleEdit(event)}>
-                          <MdEdit />
-                        </button>
-                        <button className={styles.deleteBtn} title="Xóa" onClick={() => handleDelete(event.id)}>
-                          <MdDelete />
-                        </button>
-                      </div>
                     </td>
                   </tr>
                 ))
@@ -538,6 +534,11 @@ const EventManagePage = () => {
             </div>
 
             <div className={styles.modalFooter}>
+              {editingEvent && (
+                <button type="button" className={styles.deleteBtnModal} onClick={() => handleDelete(editingEvent.id)} disabled={saving}>
+                  Xóa Sự Kiện
+                </button>
+              )}
               <button className={styles.cancelBtn} onClick={handleCloseModal}>Hủy</button>
               <button className={styles.saveBtn} onClick={handleSave} disabled={saving}>
                 {saving ? 'Đang lưu...' : editingEvent ? 'Cập Nhật' : 'Lưu Sự Kiện'}

@@ -37,7 +37,7 @@ class CinemaController extends Controller
     public function rooms($id)
     {
         $cinema = Cinema::findOrFail($id);
-        $rooms = $cinema->rooms()->withCount('seats')->get();
+        $rooms = $cinema->rooms()->withCount('seats')->with('projectionFormats')->get();
 
         return response()->json(['data' => $rooms]);
     }

@@ -16,6 +16,8 @@ const MovieManagePage = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState({});
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [selectedMovieFilter, setSelectedMovieFilter] = useState('all');
 
   const [formData, setFormData] = useState({
     title: '', description: '', genre: '', director: '', cast_info: '',
@@ -40,6 +42,10 @@ const MovieManagePage = () => {
   };
 
   useEffect(() => { fetchMovies(); }, []);
+
+  useEffect(() => {
+    setSelectedMovieFilter('all');
+  }, [statusFilter]);
 
   // Upload ảnh lên server
   const uploadImage = async (file, folder = 'movies') => {
@@ -119,6 +125,7 @@ const MovieManagePage = () => {
     try {
       await movieApi.delete(id);
       notify.success('Đã xóa phim thành công!', 'Thành công');
+      handleCloseModal();
       fetchMovies();
     } catch (error) {
       notify.error('Xóa phim thất bại!', 'Lỗi');
@@ -152,7 +159,7 @@ const MovieManagePage = () => {
         poster: posterUrl,
         duration: formData.duration ? parseInt(formData.duration) : null,
         rating: formData.rating ? parseFloat(formData.rating) : null,
-        is_featured: formData.is_featured ? 1 : 0,
+        is_featured: formData.status === 'ended' ? 0 : (formData.is_featured ? 1 : 0),
       };
 
       if (editingMovie) {
@@ -167,7 +174,17 @@ const MovieManagePage = () => {
       fetchMovies();
     } catch (error) {
       console.error('Lỗi lưu phim:', error);
-      notify.error('Lưu phim thất bại! ' + (error.response?.data?.message || ''), 'Lỗi');
+      if (error.response?.status === 422 && error.response?.data?.errors) {
+        const backendErrors = error.response.data.errors;
+        const newErrors = {};
+        Object.keys(backendErrors).forEach((key) => {
+          newErrors[key] = Array.isArray(backendErrors[key]) ? backendErrors[key][0] : backendErrors[key];
+        });
+        setErrors(newErrors);
+        notify.error('Thông tin phim chưa hợp lệ!', 'Lưu phim thất bại');
+      } else {
+        notify.error('Lưu phim thất bại! ' + (error.response?.data?.message || ''), 'Lỗi');
+      }
     } finally {
       setSaving(false);
     }
@@ -194,14 +211,49 @@ const MovieManagePage = () => {
 
   const statusMap = { now_showing: 'Đang chiếu', coming_soon: 'Sắp chiếu', ended: 'Đã kết thúc' };
 
+  const visibleMoviesForFilter = movies.filter(m => statusFilter === 'all' || m.status === statusFilter);
+
   return (
     <div className={styles.movieManage}>
-      <div className={styles.header}>
-        <h2>Quản lý Phim</h2>
-        <button className={styles.addBtn} onClick={handleOpenModal}>
-          <MdAdd /> Thêm Phim Mới
-        </button>
-      </div>
+        <div className={styles.header}>
+          <h2>Quản lý Phim</h2>
+          <div className={styles.headerActions}>
+            <div className={styles.filterWrapper}>
+              <label htmlFor="statusFilter" className={styles.filterLabel}>Trạng thái:</label>
+              <select
+                id="statusFilter"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className={styles.statusFilterSelect}
+              >
+                <option value="all">Tất cả</option>
+                <option value="now_showing">Đang chiếu</option>
+                <option value="coming_soon">Sắp chiếu</option>
+                <option value="ended">Đã ngừng chiếu</option>
+              </select>
+            </div>
+
+            <div className={styles.filterWrapper}>
+              <label htmlFor="movieFilter" className={styles.filterLabel}>Chọn phim:</label>
+              <select
+                id="movieFilter"
+                value={selectedMovieFilter}
+                onChange={(e) => setSelectedMovieFilter(e.target.value)}
+                className={styles.statusFilterSelect}
+                style={{ maxWidth: '200px' }}
+              >
+                <option value="all">Tất cả phim</option>
+                {visibleMoviesForFilter.map(m => (
+                  <option key={m.id} value={m.id}>{m.title}</option>
+                ))}
+              </select>
+            </div>
+
+            <button className={styles.addBtn} onClick={handleOpenModal}>
+              <MdAdd /> Thêm Phim Mới
+            </button>
+          </div>
+        </div>
 
       {/* Bảng danh sách phim */}
       <div className={styles.tableContainer}>
@@ -217,14 +269,19 @@ const MovieManagePage = () => {
                 <th>Thời lượng</th>
                 <th>Trạng thái</th>
                 <th>Hiện trang chủ</th>
-                <th>Thao tác</th>
               </tr>
             </thead>
             <tbody>
-              {movies.length === 0 ? (
-                <tr><td colSpan="7" style={{ textAlign: 'center', padding: '30px', color: '#aaa' }}>Chưa có phim nào</td></tr>
-              ) : movies.map(movie => (
-                <tr key={movie.id}>
+              {movies
+                .filter(m => statusFilter === 'all' || m.status === statusFilter)
+                .filter(m => selectedMovieFilter === 'all' || String(m.id) === selectedMovieFilter)
+                .length === 0 ? (
+                <tr><td colSpan="7" style={{ textAlign: 'center', padding: '30px', color: '#aaa' }}>Không tìm thấy phim nào phù hợp</td></tr>
+              ) : movies
+                .filter(m => statusFilter === 'all' || m.status === statusFilter)
+                .filter(m => selectedMovieFilter === 'all' || String(m.id) === selectedMovieFilter)
+                .map(movie => (
+                <tr key={movie.id} onClick={() => handleEdit(movie)}>
                   <td>
                     {movie.poster ? (
                       <img src={movie.poster.startsWith('http') ? movie.poster : `${STORAGE_URL}/${movie.poster}`} alt={movie.title} className={styles.posterImg} />
@@ -248,24 +305,25 @@ const MovieManagePage = () => {
                     </span>
                   </td>
                   <td>
-                    <button
-                      type="button"
-                      onClick={() => handleToggleFeatured(movie)}
-                      className={styles.toggleFeaturedBtn}
-                      title={(movie.is_featured === 1 || movie.is_featured === true) ? 'Tắt hiển thị trang chủ' : 'Bật hiển thị trang chủ'}
-                    >
-                      {(movie.is_featured === 1 || movie.is_featured === true) ? (
-                        <span className={styles.starActive}>⭐ Có</span>
-                      ) : (
-                        <span className={styles.starInactive}>☆ Không</span>
-                      )}
-                    </button>
-                  </td>
-                  <td>
-                    <div className={styles.actionBtns}>
-                      <button className={styles.editBtn} title="Sửa" onClick={() => handleEdit(movie)}><MdEdit /></button>
-                      <button className={styles.deleteBtn} title="Xóa" onClick={() => handleDelete(movie.id)}><MdDelete /></button>
-                    </div>
+                    {movie.status !== 'ended' ? (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleToggleFeatured(movie);
+                        }}
+                        className={styles.toggleFeaturedBtn}
+                        title={(movie.is_featured === 1 || movie.is_featured === true) ? 'Tắt hiển thị trang chủ' : 'Bật hiển thị trang chủ'}
+                      >
+                        {(movie.is_featured === 1 || movie.is_featured === true) ? (
+                          <span className={styles.starActive}>⭐ Có</span>
+                        ) : (
+                          <span className={styles.starInactive}>☆ Không</span>
+                        )}
+                      </button>
+                    ) : (
+                      <span style={{ color: '#aaa', fontSize: '13px' }}>-</span>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -279,7 +337,7 @@ const MovieManagePage = () => {
         <div className={styles.modalOverlay}>
           <div className={styles.modal}>
             <div className={styles.modalHeader}>
-              <h3>{editingMovie ? 'Sửa Phim' : 'Thêm Phim Mới'}</h3>
+              <h3>{editingMovie ? 'Chi Tiết Phim' : 'Thêm Phim Mới'}</h3>
               <button className={styles.closeBtn} onClick={handleCloseModal}><MdClose /></button>
             </div>
             
@@ -296,7 +354,9 @@ const MovieManagePage = () => {
                     <select name="status" value={formData.status} onChange={handleChange} className={errors.status ? 'inputErrorGlobal' : ''}>
                       <option value="now_showing">Đang chiếu</option>
                       <option value="coming_soon">Sắp chiếu</option>
-                      <option value="ended">Đã kết thúc</option>
+                      {editingMovie !== null && (
+                        <option value="ended">Đã kết thúc</option>
+                      )}
                     </select>
                     {errors.status && <span className="errorTextGlobal">{errors.status}</span>}
                   </div>
@@ -365,19 +425,25 @@ const MovieManagePage = () => {
                 </div>
 
                 {/* Hiển thị ở Trang chủ checkbox */}
-                <div className={styles.formGroup} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 10, marginBottom: 15 }}>
-                  <input
-                    type="checkbox"
-                    id="is_featured"
-                    name="is_featured"
-                    checked={formData.is_featured}
-                    onChange={(e) => setFormData(prev => ({ ...prev, is_featured: e.target.checked }))}
-                    style={{ width: '18px', height: '18px', cursor: 'pointer', margin: 0 }}
-                  />
-                  <label htmlFor="is_featured" style={{ cursor: 'pointer', fontWeight: 600, userSelect: 'none', margin: 0 }}>
-                    ⭐ Hiển thị bộ phim này trên Trang chủ (Tối đa 4 phim)
-                  </label>
-                </div>
+                {formData.status !== 'ended' && (
+                  <div className={styles.formGroup} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 10, marginBottom: 15 }}>
+                    <input
+                      type="checkbox"
+                      id="is_featured"
+                      name="is_featured"
+                      checked={formData.is_featured}
+                      onChange={(e) => setFormData(prev => ({ ...prev, is_featured: e.target.checked }))}
+                      style={{ width: '18px', height: '18px', cursor: 'pointer', margin: 0 }}
+                    />
+                    <label htmlFor="is_featured" style={{ cursor: 'pointer', fontWeight: 600, userSelect: 'none', margin: 0 }}>
+                      {formData.status === 'now_showing' ? (
+                        <span>⭐ Hiển thị phim này trong phần <strong>ĐANG CHIẾU</strong> trên Trang chủ (Tối đa 4 phim)</span>
+                      ) : (
+                        <span>⭐ Hiển thị phim này trong phần <strong>SẮP CHIẾU</strong> trên Trang chủ (Tối đa 4 phim)</span>
+                      )}
+                    </label>
+                  </div>
+                )}
 
                 {/* Khu vực Upload Poster */}
                 <div className={styles.formGroup}>
@@ -411,6 +477,16 @@ const MovieManagePage = () => {
             </div>
 
             <div className={styles.modalFooter}>
+              {editingMovie && (
+                <button
+                  type="button"
+                  className={styles.deleteBtnModal}
+                  onClick={() => handleDelete(editingMovie.id)}
+                  disabled={saving}
+                >
+                  Xóa Phim
+                </button>
+              )}
               <button className={styles.cancelBtn} onClick={handleCloseModal}>Hủy</button>
               <button className={styles.saveBtn} onClick={handleSave} disabled={saving}>
                 {saving ? 'Đang lưu...' : (editingMovie ? 'Cập Nhật' : 'Lưu Phim')}

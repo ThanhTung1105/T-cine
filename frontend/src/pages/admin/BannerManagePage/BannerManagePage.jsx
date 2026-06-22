@@ -121,6 +121,7 @@ const BannerManagePage = () => {
     try {
       await bannerApi.delete(id);
       notify.success('Đã xóa banner thành công!', 'Thành công');
+      handleCloseModal();
       fetchBanners();
     } catch (error) {
       notify.error('Xóa banner thất bại!', 'Lỗi');
@@ -203,25 +204,24 @@ const BannerManagePage = () => {
           <table className={styles.table}>
             <thead>
               <tr>
-                <th style={{ width: 100 }}>STT</th>
-                <th>Ảnh</th>
-                <th>Tiêu đề</th>
-                <th>Đường dẫn</th>
-                <th style={{ width: 100 }}>Vị trí</th>
-                <th style={{ width: 120 }}>Trạng thái</th>
-                <th style={{ width: 120 }}>Thao tác</th>
+                 <th style={{ width: 100 }}>STT</th>
+                 <th>Ảnh</th>
+                 <th>Tiêu đề</th>
+                 <th>Đường dẫn</th>
+                 <th style={{ width: 100 }}>Vị trí</th>
+                 <th style={{ width: 120 }}>Trạng thái</th>
               </tr>
             </thead>
             <tbody>
-              {banners.length === 0 ? (
-                <tr>
-                  <td colSpan="7" style={{ textAlign: 'center', padding: '30px', color: '#aaa' }}>
-                    Chưa có banner nào
-                  </td>
-                </tr>
+               {banners.length === 0 ? (
+                 <tr>
+                   <td colSpan="6" style={{ textAlign: 'center', padding: '30px', color: '#aaa' }}>
+                     Chưa có banner nào
+                   </td>
+                 </tr>
               ) : (
                 banners.map((banner, idx) => (
-                  <tr key={banner.id}>
+                  <tr key={banner.id} onClick={() => handleEdit(banner)} style={{ cursor: 'pointer' }}>
                     <td>{idx + 1}</td>
                     <td>
                       {banner.image_url ? (
@@ -237,7 +237,7 @@ const BannerManagePage = () => {
                     <td><strong>{banner.title || <span style={{ color: '#999' }}>(Không tiêu đề)</span>}</strong></td>
                     <td>
                       {banner.link_url ? (
-                        <a href={banner.link_url} target="_blank" rel="noreferrer" className={styles.linkText}>
+                        <a href={banner.link_url} target="_blank" rel="noreferrer" className={styles.linkText} onClick={(e) => e.stopPropagation()}>
                           {banner.link_url}
                         </a>
                       ) : (
@@ -248,22 +248,15 @@ const BannerManagePage = () => {
                     <td>
                       <button
                         className={`${styles.statusToggle} ${banner.is_active ? styles.active : styles.inactive}`}
-                        onClick={() => handleToggleActive(banner)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleToggleActive(banner);
+                        }}
                         title="Bật/Tắt hiển thị"
                       >
                         {banner.is_active ? <MdVisibility /> : <MdVisibilityOff />}
                         {banner.is_active ? 'Hiện' : 'Ẩn'}
                       </button>
-                    </td>
-                    <td>
-                      <div className={styles.actionBtns}>
-                        <button className={styles.editBtn} title="Sửa" onClick={() => handleEdit(banner)}>
-                          <MdEdit />
-                        </button>
-                        <button className={styles.deleteBtn} title="Xóa" onClick={() => handleDelete(banner.id)}>
-                          <MdDelete />
-                        </button>
-                      </div>
                     </td>
                   </tr>
                 ))
@@ -365,11 +358,16 @@ const BannerManagePage = () => {
             </div>
 
             <div className={styles.modalFooter}>
-              <button className={styles.cancelBtn} onClick={handleCloseModal}>Hủy</button>
-              <button className={styles.saveBtn} onClick={handleSave} disabled={saving}>
-                {saving ? 'Đang lưu...' : editingBanner ? 'Cập Nhật' : 'Lưu Banner'}
-              </button>
-            </div>
+               {editingBanner && (
+                 <button type="button" className={styles.deleteBtnModal} onClick={() => handleDelete(editingBanner.id)} disabled={saving}>
+                   Xóa Banner
+                 </button>
+               )}
+               <button className={styles.cancelBtn} onClick={handleCloseModal}>Hủy</button>
+               <button className={styles.saveBtn} onClick={handleSave} disabled={saving}>
+                 {saving ? 'Đang lưu...' : editingBanner ? 'Cập Nhật' : 'Lưu Banner'}
+               </button>
+             </div>
           </div>
         </div>
       )}

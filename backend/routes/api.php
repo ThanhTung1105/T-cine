@@ -32,6 +32,7 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\UploadController;
 use App\Http\Controllers\Admin\SeatController as AdminSeatController;
 use App\Http\Controllers\Admin\PricingController as AdminPricingController;
+use App\Http\Controllers\Admin\ProjectionFormatController as AdminProjectionFormatController;
 
 /*
 |--------------------------------------------------------------------------
@@ -138,6 +139,9 @@ Route::middleware('auth:sanctum')->group(function () {
         // Quản lý Ghế của phòng
         Route::get('/cinemas/{cinemaId}/rooms/{roomId}/seats', [AdminSeatController::class, 'index']);
         Route::post('/cinemas/{cinemaId}/rooms/{roomId}/seats/generate', [AdminSeatController::class, 'generate']);
+        Route::post('/cinemas/{cinemaId}/rooms/{roomId}/seats/bulk-update', [AdminSeatController::class, 'bulkUpdateSeats']);
+        Route::post('/cinemas/{cinemaId}/rooms/{roomId}/seats/merge', [AdminSeatController::class, 'mergeSeats']);
+        Route::post('/cinemas/{cinemaId}/rooms/{roomId}/seats/split', [AdminSeatController::class, 'splitSeat']);
         Route::put('/cinemas/{cinemaId}/rooms/{roomId}/seats/{seatId}', [AdminSeatController::class, 'update']);
         Route::delete('/cinemas/{cinemaId}/rooms/{roomId}/seats', [AdminSeatController::class, 'destroyAll']);
 
@@ -183,5 +187,17 @@ Route::middleware('auth:sanctum')->group(function () {
         // Quản lý Bảng giá vé
         Route::get('/pricings', [AdminPricingController::class, 'index']);
         Route::put('/pricings', [AdminPricingController::class, 'bulkUpdate']);
+
+        // Quản lý ngày lễ (Holidays)
+        Route::get('/holidays', [AdminPricingController::class, 'getHolidays']);
+        Route::post('/holidays', [AdminPricingController::class, 'saveHoliday']);
+        Route::delete('/holidays/{id}', [AdminPricingController::class, 'deleteHoliday']);
+
+        // Quản lý Định dạng phòng chiếu
+        Route::get('/projection-formats', [AdminProjectionFormatController::class, 'index']);
+        Route::post('/projection-formats', [AdminProjectionFormatController::class, 'store']);
+        Route::put('/projection-formats/surcharges', [AdminProjectionFormatController::class, 'bulkUpdateSurcharges']);
+        Route::put('/projection-formats/{id}', [AdminProjectionFormatController::class, 'update']);
+        Route::delete('/projection-formats/{id}', [AdminProjectionFormatController::class, 'destroy']);
     });
 });

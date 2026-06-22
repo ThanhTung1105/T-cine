@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { MdAdd, MdEdit, MdDelete, MdClose, MdEventSeat, MdAutoFixHigh, MdDeleteSweep, MdInfoOutline } from 'react-icons/md';
 import cinemaApi from '../../../api/cinemaApi';
+import projectionFormatApi from '../../../api/projectionFormatApi';
 import { getErrorMessage } from '../../../utils/helpers';
 import { notify, confirmDialog } from '../../../utils/notify';
 import styles from './RoomManagePage.module.scss';
@@ -30,7 +31,8 @@ const RoomManagePage = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [editingRoom, setEditingRoom] = useState(null);
-  const [formData, setFormData] = useState({ name: '', capacity: '' });
+  const [formData, setFormData] = useState({ name: '', capacity: '', projection_format_ids: [] });
+  const [projectionFormats, setProjectionFormats] = useState([]);
   const [errors, setErrors] = useState({});
 
   // Seat state
@@ -45,13 +47,18 @@ const RoomManagePage = () => {
   });
   const [generating, setGenerating] = useState(false);
   const [seatErrors, setSeatErrors] = useState({});
+  const [selectedSeatIds, setSelectedSeatIds] = useState([]);
 
   // ===== Cinemas =====
   const fetchCinemas = async () => {
     try {
-      const res = await cinemaApi.getAll();
-      const list = res.data || [];
+      const [cinemasRes, formatsRes] = await Promise.all([
+        cinemaApi.getAll(),
+        projectionFormatApi.getAll()
+      ]);
+      const list = cinemasRes.data || [];
       setCinemas(list);
+      setProjectionFormats(Array.isArray(formatsRes) ? formatsRes : (formatsRes.data || []));
       if (list.length > 0 && !selectedCinema) {
         setSelectedCinema(String(list[0].id));
       }
@@ -91,14 +98,18 @@ const RoomManagePage = () => {
 
   const handleOpenModal = () => {
     setEditingRoom(null);
-    setFormData({ name: '', capacity: '' });
+    setFormData({ name: '', capacity: '', projection_format_ids: [] });
     setErrors({});
     setIsModalOpen(true);
   };
 
   const handleEdit = (room) => {
     setEditingRoom(room);
-    setFormData({ name: room.name, capacity: room.capacity || '' });
+    setFormData({
+      name: room.name,
+      capacity: room.capacity || '',
+      projection_format_ids: room.projection_formats ? room.projection_formats.map(f => f.id) : []
+    });
     setErrors({});
     setIsModalOpen(true);
   };
@@ -147,7 +158,11 @@ const RoomManagePage = () => {
 
     setSaving(true);
     try {
-      const payload = { name: formData.name.trim(), capacity: capacityVal };
+      const payload = {
+        name: formData.name.trim(),
+        capacity: capacityVal,
+        projection_format_ids: formData.projection_format_ids
+      };
       if (editingRoom) {
         await cinemaApi.updateRoom(selectedCinema, editingRoom.id, payload);
         notify.success('Đã cập nhật phòng chiếu');
@@ -159,7 +174,17 @@ const RoomManagePage = () => {
       fetchRooms(selectedCinema);
     } catch (e) {
       console.error('[RoomManagePage] save error:', e);
-      notify.error(getErrorMessage(e), 'Lưu phòng thất bại');
+      if (e.response?.status === 422 && e.response?.data?.errors) {
+        const backendErrors = e.response.data.errors;
+        const newErrors = {};
+        Object.keys(backendErrors).forEach((key) => {
+          newErrors[key] = Array.isArray(backendErrors[key]) ? backendErrors[key][0] : backendErrors[key];
+        });
+        setErrors(newErrors);
+        notify.error('Thông tin phòng chiếu chưa hợp lệ!', 'Lưu phòng thất bại');
+      } else {
+        notify.error(getErrorMessage(e), 'Lưu phòng thất bại');
+      }
     } finally {
       setSaving(false);
     }
@@ -183,6 +208,7 @@ const RoomManagePage = () => {
   const handleOpenSeatModal = async (room) => {
     setSelectedRoomForSeat(room);
     setSeatErrors({});
+    setSelectedSeatIds([]);
     setSeatGenForm({
       rows: 8,
       columns: 10,
@@ -198,6 +224,7 @@ const RoomManagePage = () => {
     setIsSeatModalOpen(false);
     setSelectedRoomForSeat(null);
     setSeats([]);
+    setSelectedSeatIds([]);
     setSeatErrors({});
     // Refresh rooms để cập nhật seats_count/capacity
     fetchRooms(selectedCinema);
@@ -318,17 +345,110 @@ const RoomManagePage = () => {
     }
   };
 
-  // Click ghế => cycle type (optimistic update)
-  const handleClickSeat = async (seat) => {
-    const newType = NEXT_TYPE[seat.type] || 'normal';
-    setSeats(prev => prev.map(s => (s.id === seat.id ? { ...s, type: newType } : s)));
+  // Click ghế => toggle selection
+  const handleClickSeat = (seat) => {
+    setSelectedSeatIds(prev => {
+      if (prev.includes(seat.id)) {
+        return prev.filter(id => id !== seat.id);
+      } else {
+        return [...prev, seat.id];
+      }
+    });
+  };
+
+  const canMerge = () => {
+    if (selectedSeatIds.length !== 2) return false;
+    const s1 = seats.find(s => s.id === selectedSeatIds[0]);
+    const s2 = seats.find(s => s.id === selectedSeatIds[1]);
+    if (!s1 || !s2) return false;
+    if (s1.row !== s2.row) return false;
+    if (s1.type === 'couple' || s2.type === 'couple') return false;
+    return Math.abs(s1.column_num - s2.column_num) === 1;
+  };
+
+  const canSplit = () => {
+    if (selectedSeatIds.length !== 1) return false;
+    const s = seats.find(s => s.id === selectedSeatIds[0]);
+    return s && s.type === 'couple';
+  };
+
+  const handleBulkUpdateType = async (type) => {
+    setSeatLoading(true);
     try {
-      await cinemaApi.updateSeat(selectedCinema, selectedRoomForSeat.id, seat.id, { type: newType });
+      const res = await cinemaApi.bulkUpdateSeats(selectedCinema, selectedRoomForSeat.id, {
+        ids: selectedSeatIds,
+        type,
+      });
+      if (res.data && res.data.seats) {
+        setSeats(res.data.seats);
+      }
+      setSelectedSeatIds([]);
+      notify.success(`Đã cập nhật loại ghế thành công`);
     } catch (e) {
-      console.error('[RoomManagePage] updateSeat error:', e);
-      // Rollback
-      setSeats(prev => prev.map(s => (s.id === seat.id ? { ...s, type: seat.type } : s)));
-      notify.error(getErrorMessage(e), 'Cập nhật ghế thất bại');
+      console.error('[RoomManagePage] bulkUpdateSeats type error:', e);
+      notify.error(getErrorMessage(e), 'Cập nhật loại ghế thất bại');
+    } finally {
+      setSeatLoading(false);
+    }
+  };
+
+  const handleBulkUpdateStatus = async (status) => {
+    setSeatLoading(true);
+    try {
+      const res = await cinemaApi.bulkUpdateSeats(selectedCinema, selectedRoomForSeat.id, {
+        ids: selectedSeatIds,
+        status,
+      });
+      if (res.data && res.data.seats) {
+        setSeats(res.data.seats);
+      }
+      setSelectedSeatIds([]);
+      notify.success(`Đã cập nhật trạng thái ghế thành công`);
+    } catch (e) {
+      console.error('[RoomManagePage] bulkUpdateSeats status error:', e);
+      notify.error(getErrorMessage(e), 'Cập nhật trạng thái thất bại');
+    } finally {
+      setSeatLoading(false);
+    }
+  };
+
+  const handleMergeSeats = async () => {
+    if (!canMerge()) return;
+    setSeatLoading(true);
+    try {
+      const res = await cinemaApi.mergeSeats(selectedCinema, selectedRoomForSeat.id, {
+        seat_ids: selectedSeatIds,
+      });
+      if (res.data && res.data.seats) {
+        setSeats(res.data.seats);
+      }
+      setSelectedSeatIds([]);
+      notify.success('Ghép ghế đôi thành công');
+    } catch (e) {
+      console.error('[RoomManagePage] mergeSeats error:', e);
+      notify.error(getErrorMessage(e), 'Ghép ghế đôi thất bại');
+    } finally {
+      setSeatLoading(false);
+    }
+  };
+
+  const handleSplitSeat = async () => {
+    if (!canSplit()) return;
+    setSeatLoading(true);
+    try {
+      const res = await cinemaApi.splitSeat(selectedCinema, selectedRoomForSeat.id, {
+        seat_id: selectedSeatIds[0],
+      });
+      if (res.data && res.data.seats) {
+        setSeats(res.data.seats);
+      }
+      setSelectedSeatIds([]);
+      notify.success('Tách ghế đôi thành công');
+    } catch (e) {
+      console.error('[RoomManagePage] splitSeat error:', e);
+      notify.error(getErrorMessage(e), 'Tách ghế đôi thất bại');
+    } finally {
+      setSeatLoading(false);
     }
   };
 
@@ -339,11 +459,28 @@ const RoomManagePage = () => {
   }, {});
   const sortedRowKeys = Object.keys(seatsByRow).sort();
   const seatCount = seats.length;
-  const vipCount = seats.filter(s => s.type === 'vip').length;
-  const coupleCount = seats.filter(s => s.type === 'couple').length;
-  const normalCount = seatCount - vipCount - coupleCount;
+  const activeSeats = seats.filter(s => s.status === 'active');
+  const vipCount = activeSeats.filter(s => s.type === 'vip').length;
+  const coupleCount = activeSeats.filter(s => s.type === 'couple').length;
+  const normalCount = activeSeats.filter(s => s.type === 'normal').length;
+  const brokenCount = seats.filter(s => s.status === 'broken').length;
 
   const cinemaName = cinemas.find(c => String(c.id) === selectedCinema)?.name || '';
+
+  const anySelectedBroken = selectedSeatIds.some(id => {
+    const seat = seats.find(s => s.id === id);
+    return seat && seat.status === 'broken';
+  });
+
+  const allSelectedActive = selectedSeatIds.every(id => {
+    const seat = seats.find(s => s.id === id);
+    return seat && seat.status === 'active';
+  });
+
+  const allSelectedBroken = selectedSeatIds.every(id => {
+    const seat = seats.find(s => s.id === id);
+    return seat && seat.status === 'broken';
+  });
 
   return (
     <div className={styles.roomManage}>
@@ -362,23 +499,33 @@ const RoomManagePage = () => {
       <div className={styles.tableContainer}>
         {loading ? <p style={{ textAlign: 'center', padding: '40px', color: '#aaa' }}>Đang tải...</p> : (
           <table className={styles.table}>
-            <thead><tr><th>Tên Phòng</th><th>Sức chứa</th><th>Số ghế</th><th>Thao tác</th></tr></thead>
+            <thead><tr><th>Tên Phòng</th><th>Sức chứa</th><th>Số ghế</th><th>Định dạng hỗ trợ</th><th>Thao tác</th></tr></thead>
             <tbody>
               {rooms.length > 0 ? rooms.map(room => (
-                <tr key={room.id}>
+                <tr key={room.id} onClick={() => handleOpenSeatModal(room)}>
                   <td><strong>{room.name}</strong></td>
                   <td>{room.capacity || 0} ghế</td>
                   <td>{room.seats_count ?? 0}</td>
                   <td>
+                    <div className={styles.roomFormatsList}>
+                      {room.projection_formats && room.projection_formats.length > 0 ? (
+                        room.projection_formats.map(fmt => (
+                          <span key={fmt.id} className={styles.roomFormatTag}>{fmt.name}</span>
+                        ))
+                      ) : (
+                        <span style={{ color: '#aaa', fontStyle: 'italic', fontSize: '12px' }}>Chưa cấu hình</span>
+                      )}
+                    </div>
+                  </td>
+                  <td onClick={(e) => e.stopPropagation()}>
                     <div className={styles.actionBtns}>
-                      <button className={styles.seatBtn} title="Quản lý ghế" onClick={() => handleOpenSeatModal(room)}><MdEventSeat /></button>
                       <button className={styles.editBtn} title="Sửa" onClick={() => handleEdit(room)}><MdEdit /></button>
                       <button className={styles.deleteBtn} title="Xóa" onClick={() => handleDelete(room.id)}><MdDelete /></button>
                     </div>
                   </td>
                 </tr>
               )) : (
-                <tr><td colSpan="4" className={styles.emptyState}>Rạp này hiện chưa có phòng chiếu nào.</td></tr>
+                <tr><td colSpan="5" className={styles.emptyState}>Rạp này hiện chưa có phòng chiếu nào.</td></tr>
               )}
             </tbody>
           </table>
@@ -411,6 +558,33 @@ const RoomManagePage = () => {
                     {errors.capacity && <span className="errorTextGlobal">{errors.capacity}</span>}
                     <span className={styles.helperText}>Sẽ tự cập nhật khi bạn tạo sơ đồ ghế</span>
                   </div>
+                </div>
+                <div className={styles.formGroup}>
+                  <label>Định dạng chiếu hỗ trợ *</label>
+                  <div className={styles.checkboxGrid}>
+                    {projectionFormats.map(fmt => (
+                      <label key={fmt.id} className={styles.checkboxLabel}>
+                        <input
+                          type="checkbox"
+                          checked={formData.projection_format_ids?.includes(fmt.id)}
+                          onChange={(e) => {
+                            const checked = e.target.checked;
+                            setFormData(prev => {
+                              const ids = prev.projection_format_ids || [];
+                              return {
+                                ...prev,
+                                projection_format_ids: checked
+                                  ? [...ids, fmt.id]
+                                  : ids.filter(id => id !== fmt.id)
+                              };
+                            });
+                          }}
+                        />
+                        <span>{fmt.name}</span>
+                      </label>
+                    ))}
+                  </div>
+                  {errors.projection_format_ids && <span className="errorTextGlobal">{errors.projection_format_ids}</span>}
                 </div>
               </form>
             </div>
@@ -512,11 +686,82 @@ const RoomManagePage = () => {
                   <div className={styles.legendItem}><div className={`${styles.seatBox} ${styles.seatStandard}`}></div> Ghế Thường ({normalCount})</div>
                   <div className={styles.legendItem}><div className={`${styles.seatBox} ${styles.seatVip}`}></div> Ghế VIP ({vipCount})</div>
                   <div className={styles.legendItem}><div className={`${styles.seatBox} ${styles.seatCouple}`}></div> Ghế Đôi ({coupleCount})</div>
+                  <div className={styles.legendItem}><div className={`${styles.seatBox} ${styles.seatBroken}`}></div> Ghế Hỏng ({brokenCount})</div>
                 </div>
                 <p className={styles.helperText}>
-                  <MdInfoOutline style={{ verticalAlign: 'middle' }} /> Click vào từng ghế để đổi loại: <strong>Thường → VIP → Đôi → Thường</strong>. Tổng cộng: <strong>{seatCount} ghế</strong>.
+                  <MdInfoOutline style={{ verticalAlign: 'middle' }} /> Click vào các ghế để chọn. Bạn có thể chọn nhiều ghế cùng lúc để đổi loại (Thường, VIP), đổi trạng thái (Hoạt động, Hỏng) hoặc ghép/tách ghế đôi. Tổng cộng: <strong>{seatCount} ghế</strong>.
                 </p>
               </div>
+
+              {/* Bảng thao tác nhanh cho ghế đang chọn */}
+              {selectedSeatIds.length > 0 && (
+                <div className={styles.actionPanel}>
+                  <div className={styles.actionPanelTitle}>
+                    Đang chọn: <strong>{selectedSeatIds.length} ghế</strong>
+                  </div>
+                  <div className={styles.actionPanelButtons}>
+                     <button
+                      className={styles.actionBtnNormal}
+                      disabled={anySelectedBroken}
+                      title={anySelectedBroken ? 'Vui lòng đặt hoạt động lại trước khi đổi loại ghế' : 'Đổi loại ghế thành Thường'}
+                      onClick={() => handleBulkUpdateType('normal')}
+                    >
+                      Đổi thành Ghế Thường
+                    </button>
+                    <button
+                      className={styles.actionBtnVip}
+                      disabled={anySelectedBroken}
+                      title={anySelectedBroken ? 'Vui lòng đặt hoạt động lại trước khi đổi loại ghế' : 'Đổi loại ghế thành VIP'}
+                      onClick={() => handleBulkUpdateType('vip')}
+                    >
+                      Đổi thành Ghế VIP
+                    </button>
+                    <button
+                      className={styles.actionBtnActive}
+                      disabled={allSelectedActive}
+                      title={allSelectedActive ? 'Tất cả ghế chọn đang hoạt động' : 'Đặt trạng thái hoạt động cho các ghế chọn'}
+                      onClick={() => handleBulkUpdateStatus('active')}
+                    >
+                      Đặt Hoạt Động
+                    </button>
+                    <button
+                      className={styles.actionBtnBroken}
+                      disabled={allSelectedBroken}
+                      title={allSelectedBroken ? 'Tất cả ghế chọn đã bị hỏng' : 'Đặt trạng thái bị hỏng cho các ghế chọn'}
+                      onClick={() => handleBulkUpdateStatus('broken')}
+                    >
+                      Đặt Bị Hỏng
+                    </button>
+
+                    {/* Nút ghép ghế đôi */}
+                    <button
+                      className={styles.actionBtnMerge}
+                      disabled={anySelectedBroken || !canMerge()}
+                      title={anySelectedBroken ? 'Không thể ghép ghế đang bị hỏng' : (canMerge() ? 'Ghép 2 ghế đơn liền kề' : 'Chọn đúng 2 ghế đơn liền kề trong cùng hàng để ghép')}
+                      onClick={handleMergeSeats}
+                    >
+                      Ghép thành Ghế Đôi
+                    </button>
+
+                    {/* Nút tách ghế đôi */}
+                    <button
+                      className={styles.actionBtnSplit}
+                      disabled={anySelectedBroken || !canSplit()}
+                      title={anySelectedBroken ? 'Không thể tách ghế đang bị hỏng' : (canSplit() ? 'Tách ghế đôi thành 2 ghế đơn' : 'Chọn đúng 1 ghế đôi để tách')}
+                      onClick={handleSplitSeat}
+                    >
+                      Tách thành 2 Ghế Đơn
+                    </button>
+
+                    <button
+                      className={styles.actionBtnClear}
+                      onClick={() => setSelectedSeatIds([])}
+                    >
+                      Hủy chọn
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {/* Sơ đồ ghế */}
               <div className={styles.screenArea}><div className={styles.screen}>MÀN HÌNH</div></div>
@@ -533,8 +778,8 @@ const RoomManagePage = () => {
                           .map(seat => (
                             <div
                               key={seat.id}
-                              className={`${styles.seatBox} ${styles[SEAT_TYPE_CLASS[seat.type]] || styles.seatStandard}`}
-                              title={`${seat.row}${seat.column_num} - ${SEAT_TYPE_LABEL[seat.type]} (click để đổi loại)`}
+                              className={`${styles.seatBox} ${styles[SEAT_TYPE_CLASS[seat.type]] || styles.seatStandard} ${selectedSeatIds.includes(seat.id) ? styles.selectedSeat : ''} ${seat.status === 'broken' ? styles.seatBroken : ''}`}
+                              title={`${seat.row}${seat.column_num} - ${SEAT_TYPE_LABEL[seat.type]} (${seat.status === 'broken' ? 'Bị hỏng' : 'Đang hoạt động'})`}
                               onClick={() => handleClickSeat(seat)}
                             >
                               {seat.column_num}

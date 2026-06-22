@@ -64,12 +64,12 @@ const OrderManagePage = () => {
       <div className={styles.tableContainer}>
         {loading ? <p style={{ textAlign: 'center', padding: '40px', color: '#aaa' }}>Đang tải...</p> : (
           <table className={styles.table}>
-            <thead><tr><th>Mã đơn</th><th>Khách hàng</th><th>Phim</th><th>Tổng tiền</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
+            <thead><tr><th>Mã đơn</th><th>Khách hàng</th><th>Phim</th><th>Tổng tiền</th><th>Trạng thái</th></tr></thead>
             <tbody>
               {filteredOrders.length === 0 ? (
-                <tr><td colSpan="6" style={{ textAlign: 'center', padding: '30px', color: '#aaa' }}>Không có đơn hàng</td></tr>
+                <tr><td colSpan="5" style={{ textAlign: 'center', padding: '30px', color: '#aaa' }}>Không có đơn hàng</td></tr>
               ) : filteredOrders.map(order => (
-                <tr key={order.id}>
+                <tr key={order.id} onClick={() => handleOpenModal(order)}>
                   <td><strong>{order.booking_code}</strong></td>
                   <td>{order.user?.name || 'N/A'}</td>
                   <td>{order.showtime?.movie?.title || 'N/A'}</td>
@@ -79,17 +79,6 @@ const OrderManagePage = () => {
                       {statusMap[order.status] || order.status}
                     </span>
                   </td>
-                  <td>
-                    <div className={styles.actionBtns || styles.viewBtn}>
-                      <button className={styles.viewBtn} title="Xem chi tiết" onClick={() => handleOpenModal(order)}><MdVisibility /></button>
-                      {order.status === 'pending' && (
-                        <>
-                          <button style={{ background: '#10b981', color: '#fff', border: 'none', borderRadius: 4, padding: '4px 6px', cursor: 'pointer', marginLeft: 4 }} title="Xác nhận thanh toán" onClick={() => handleUpdateStatus(order.id, 'paid')}><MdCheckCircle /></button>
-                          <button style={{ background: '#ef4444', color: '#fff', border: 'none', borderRadius: 4, padding: '4px 6px', cursor: 'pointer', marginLeft: 4 }} title="Hủy đơn" onClick={() => handleUpdateStatus(order.id, 'cancelled')}><MdCancel /></button>
-                        </>
-                      )}
-                    </div>
-                  </td>
                 </tr>
               ))}
             </tbody>
@@ -98,8 +87,8 @@ const OrderManagePage = () => {
       </div>
 
       {isModalOpen && selectedOrder && (
-        <div className={styles.modalOverlay}>
-          <div className={styles.modal}>
+        <div className={styles.modalOverlay} onClick={handleCloseModal}>
+          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalHeader}>
               <h3>Chi tiết Đơn hàng: {selectedOrder.booking_code}</h3>
               <button className={styles.closeBtn} onClick={handleCloseModal}><MdClose /></button>
@@ -117,6 +106,12 @@ const OrderManagePage = () => {
               <div className={styles.detailRow}><span className={styles.label}>Trạng thái:</span><span className={styles.value}>{statusMap[selectedOrder.status]}</span></div>
             </div>
             <div className={styles.modalFooter}>
+              {selectedOrder.status === 'pending' && (
+                <>
+                  <button className={styles.approveBtn} onClick={() => handleUpdateStatus(selectedOrder.id, 'paid')}>Xác nhận thanh toán</button>
+                  <button className={styles.rejectBtn} onClick={() => handleUpdateStatus(selectedOrder.id, 'cancelled')}>Hủy đơn</button>
+                </>
+              )}
               <button className={styles.cancelBtn} onClick={handleCloseModal}>Đóng</button>
             </div>
           </div>

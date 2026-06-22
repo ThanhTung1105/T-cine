@@ -78,8 +78,9 @@
   }
 
   tbody tr {
+    cursor: pointer;
     transition: background-color 0.2s;
-    &:hover { background-color: #f9fafb; }
+    &:hover { background-color: #f3f4f6; }
 
     &.rowDisabled {
       opacity: 0.55;
@@ -334,6 +335,23 @@
 
     &:disabled {
       opacity: 0.6;
+      cursor: not-allowed;
+    }
+  }
+
+  .deleteBtnModal {
+    background-color: #ef4444;
+    border: 1px solid #ef4444;
+    color: white;
+    margin-right: auto;
+
+    &:hover {
+      background-color: darken(#ef4444, 8%);
+    }
+
+    &:disabled {
+      background-color: #fca5a5;
+      border-color: #fca5a5;
       cursor: not-allowed;
     }
   }

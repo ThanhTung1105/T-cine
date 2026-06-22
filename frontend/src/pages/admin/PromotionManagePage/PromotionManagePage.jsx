@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MdAdd, MdEdit, MdDelete, MdClose, MdContentCopy, MdLocalOffer } from 'react-icons/md';
+import { MdAdd, MdClose, MdContentCopy, MdLocalOffer } from 'react-icons/md';
 import promotionApi from '../../../api/promotionApi';
 import { notify, confirmDialog } from '../../../utils/notify';
 import styles from './PromotionManagePage.module.scss';
@@ -96,6 +96,7 @@ const PromotionManagePage = () => {
     try {
       await promotionApi.delete(id);
       notify.success('Đã xóa mã giảm giá thành công!', 'Thành công');
+      handleCloseModal();
       fetchPromotions();
     } catch {
       notify.error('Xóa mã giảm giá thất bại!', 'Lỗi');
@@ -186,22 +187,21 @@ const PromotionManagePage = () => {
           <table className={styles.table}>
             <thead>
               <tr>
-                <th>Mã</th>
-                <th style={{ width: 100 }}>% Giảm</th>
-                <th>Giảm tối đa</th>
-                <th>Thời gian hiệu lực</th>
-                <th>Lượt dùng</th>
-                <th style={{ width: 120 }}>Trạng thái</th>
-                <th style={{ width: 140 }}>Thao tác</th>
+                 <th>Mã</th>
+                 <th style={{ width: 100 }}>% Giảm</th>
+                 <th>Giảm tối đa</th>
+                 <th>Thời gian hiệu lực</th>
+                 <th>Lượt dùng</th>
+                 <th style={{ width: 120 }}>Trạng thái</th>
               </tr>
             </thead>
             <tbody>
-              {promotions.length === 0 ? (
-                <tr>
-                  <td colSpan="7" style={{ textAlign: 'center', padding: '30px', color: '#aaa' }}>
-                    Chưa có mã giảm giá nào
-                  </td>
-                </tr>
+               {promotions.length === 0 ? (
+                 <tr>
+                   <td colSpan="6" style={{ textAlign: 'center', padding: '30px', color: '#aaa' }}>
+                     Chưa có mã giảm giá nào
+                   </td>
+                 </tr>
               ) : (
                 promotions.map((p) => {
                   const expired = isExpired(p.valid_to);
@@ -209,14 +209,17 @@ const PromotionManagePage = () => {
                   const inactive = expired || usedUp;
 
                   return (
-                    <tr key={p.id} className={inactive ? styles.rowDisabled : ''}>
+                    <tr key={p.id} className={`${inactive ? styles.rowDisabled : ''} ${styles.clickableRow}`} onClick={() => handleEdit(p)}>
                       <td>
                         <div className={styles.codeCell}>
                           <MdLocalOffer className={styles.codeIcon} />
                           <code>{p.code}</code>
                           <button
                             className={styles.copyBtn}
-                            onClick={() => handleCopy(p.code)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleCopy(p.code);
+                            }}
                             title="Sao chép mã"
                           >
                             <MdContentCopy />
@@ -242,16 +245,6 @@ const PromotionManagePage = () => {
                         ) : (
                           <span className={`${styles.statusBadge} ${styles.active}`}>Đang hoạt động</span>
                         )}
-                      </td>
-                      <td>
-                        <div className={styles.actionBtns}>
-                          <button className={styles.editBtn} title="Sửa" onClick={() => handleEdit(p)}>
-                            <MdEdit />
-                          </button>
-                          <button className={styles.deleteBtn} title="Xóa" onClick={() => handleDelete(p.id)}>
-                            <MdDelete />
-                          </button>
-                        </div>
                       </td>
                     </tr>
                   );
@@ -342,11 +335,16 @@ const PromotionManagePage = () => {
             </div>
 
             <div className={styles.modalFooter}>
-              <button className={styles.cancelBtn} onClick={handleCloseModal}>Hủy</button>
-              <button className={styles.saveBtn} onClick={handleSave} disabled={saving}>
-                {saving ? 'Đang lưu...' : editing ? 'Cập Nhật' : 'Lưu Mã'}
-              </button>
-            </div>
+               {editing && (
+                 <button type="button" className={styles.deleteBtnModal} onClick={() => handleDelete(editing.id)} disabled={saving}>
+                   Xóa Mã Giảm Giá
+                 </button>
+               )}
+               <button className={styles.cancelBtn} onClick={handleCloseModal}>Hủy</button>
+               <button className={styles.saveBtn} onClick={handleSave} disabled={saving}>
+                 {saving ? 'Đang lưu...' : editing ? 'Cập Nhật' : 'Lưu Mã'}
+               </button>
+             </div>
           </div>
         </div>
       )}

@@ -51,6 +51,23 @@ class UserController extends Controller
     public function update(Request $request, $id)
     {
         $user = User::findOrFail($id);
+        $currentUser = $request->user();
+
+        // 1. Chỉ tài khoản admin global (admin@tcine.com) mới được sửa đổi tài khoản của chính nó
+        if ($user->email === 'admin@tcine.com' && $currentUser->email !== 'admin@tcine.com') {
+            return response()->json([
+                'message' => 'Bạn không có quyền chỉnh sửa tài khoản admin global.'
+            ], 403);
+        }
+
+        // 2. Chỉ tài khoản admin global mới có quyền thay đổi vai trò (phân quyền)
+        if ($request->has('role') && $request->role !== $user->role) {
+            if ($currentUser->email !== 'admin@tcine.com') {
+                return response()->json([
+                    'message' => 'Chỉ tài khoản admin global mới có quyền phân quyền cho tài khoản khác.'
+                ], 403);
+            }
+        }
 
         $request->validate([
             'name' => 'sometimes|string|max:255',
@@ -70,11 +87,29 @@ class UserController extends Controller
      * API #42: [Admin] Xóa người dùng
      * DELETE /api/admin/users/{id}
      */
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
         $user = User::findOrFail($id);
+        $currentUser = $request->user();
+
+        // 1. Không được phép xóa tài khoản admin global
+        if ($user->email === 'admin@tcine.com') {
+            return response()->json([
+                'message' => 'Không thể xóa tài khoản admin global.'
+            ], 403);
+        }
+
+        // 2. Chỉ tài khoản admin global mới được phép xóa tài khoản admin khác
+        if ($user->role === 'admin' && $currentUser->email !== 'admin@tcine.com') {
+            return response()->json([
+                'message' => 'Chỉ tài khoản admin global mới có quyền xóa tài khoản quản trị viên khác.'
+            ], 403);
+        }
+
+
         $user->delete();
 
         return response()->json(['message' => 'Xóa người dùng thành công']);
     }
+
 }

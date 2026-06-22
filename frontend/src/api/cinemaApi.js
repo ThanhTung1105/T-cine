@@ -27,6 +27,12 @@ const cinemaApi = {
     axiosClient.post(`/admin/cinemas/${cinemaId}/rooms/${roomId}/seats/generate`, data),
   updateSeat: (cinemaId, roomId, seatId, data) =>
     axiosClient.put(`/admin/cinemas/${cinemaId}/rooms/${roomId}/seats/${seatId}`, data),
+  bulkUpdateSeats: (cinemaId, roomId, data) =>
+    axiosClient.post(`/admin/cinemas/${cinemaId}/rooms/${roomId}/seats/bulk-update`, data),
+  mergeSeats: (cinemaId, roomId, data) =>
+    axiosClient.post(`/admin/cinemas/${cinemaId}/rooms/${roomId}/seats/merge`, data),
+  splitSeat: (cinemaId, roomId, data) =>
+    axiosClient.post(`/admin/cinemas/${cinemaId}/rooms/${roomId}/seats/split`, data),
   clearSeats: (cinemaId, roomId) =>
     axiosClient.delete(`/admin/cinemas/${cinemaId}/rooms/${roomId}/seats`),
 };

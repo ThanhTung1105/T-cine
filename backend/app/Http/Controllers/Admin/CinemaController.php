@@ -68,9 +68,20 @@ class CinemaController extends Controller
         $request->validate([
             'name' => 'required|string|max:100',
             'capacity' => 'required|integer|min:1',
+            'projection_format_ids' => 'nullable|array',
+            'projection_format_ids.*' => 'exists:projection_formats,id',
+        ], [
+            'projection_format_ids.array' => 'Định dạng chiếu phải là danh sách.',
+            'projection_format_ids.*.exists' => 'Một hoặc nhiều định dạng chiếu không hợp lệ.',
         ]);
 
-        $room = $cinema->rooms()->create($request->all());
+        $room = $cinema->rooms()->create($request->only(['name', 'capacity']));
+
+        if ($request->has('projection_format_ids')) {
+            $room->projectionFormats()->sync($request->projection_format_ids);
+        }
+
+        $room->load('projectionFormats');
 
         return response()->json([
             'message' => 'Thêm phòng chiếu thành công',
@@ -85,11 +96,28 @@ class CinemaController extends Controller
     public function updateRoom(Request $request, $id, $roomId)
     {
         $room = Room::where('cinema_id', $id)->findOrFail($roomId);
-        $room->update($request->all());
+
+        $request->validate([
+            'name' => 'sometimes|required|string|max:100',
+            'capacity' => 'sometimes|required|integer|min:1',
+            'projection_format_ids' => 'nullable|array',
+            'projection_format_ids.*' => 'exists:projection_formats,id',
+        ], [
+            'projection_format_ids.array' => 'Định dạng chiếu phải là danh sách.',
+            'projection_format_ids.*.exists' => 'Một hoặc nhiều định dạng chiếu không hợp lệ.',
+        ]);
+
+        $room->update($request->only(['name', 'capacity']));
+
+        if ($request->has('projection_format_ids')) {
+            $room->projectionFormats()->sync($request->projection_format_ids);
+        }
+
+        $room->load('projectionFormats');
 
         return response()->json([
             'message' => 'Cập nhật phòng chiếu thành công',
-            'data' => $room->fresh(),
+            'data' => $room,
         ]);
     }
 

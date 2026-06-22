@@ -23,17 +23,31 @@ class BookingController extends Controller
             ->where('created_at', '<', now()->subMinutes(5))
             ->update(['status' => 'cancelled']);
 
+        $user = $request->user();
+
+        // 1. Kiểm tra đơn hàng pending đang tồn tại
+        $hasPending = Booking::where('user_id', $user->id)
+            ->where('status', 'pending')
+            ->exists();
+
+        if ($hasPending) {
+            return response()->json([
+                'message' => 'Bạn đang có một đơn hàng chưa thanh toán, vui lòng thanh toán để tiếp tục giao dịch.'
+            ], 422);
+        }
+
+        // 2. Validate request (giới hạn tối đa 8 ghế)
         $request->validate([
             'showtime_id' => 'required|exists:showtimes,id',
-            'seat_ids' => 'required|array|min:1',
+            'seat_ids' => 'required|array|min:1|max:8',
             'seat_ids.*' => 'exists:seats,id',
             'combos' => 'nullable|array',
             'combos.*.combo_id' => 'exists:combos,id',
             'combos.*.quantity' => 'integer|min:1',
             'promotion_id' => 'nullable|exists:promotions,id',
+        ], [
+            'seat_ids.max' => 'Bạn chỉ được chọn tối đa 8 ghế.',
         ]);
-
-        $user = $request->user();
 
         // Kiểm tra ghế đã được đặt chưa
         $bookedSeatIds = Booking::where('showtime_id', $request->showtime_id)
@@ -60,7 +74,7 @@ class BookingController extends Controller
         $ticketsData = [];
 
         foreach ($seats as $seat) {
-            $price = Pricing::resolve($seat->type, $showtime->start_time);
+            $price = Pricing::resolve($seat->type, $showtime->start_time, $showtime->projection_format_id);
 
             $ticketsData[] = [
                 'seat_id'    => $seat->id,

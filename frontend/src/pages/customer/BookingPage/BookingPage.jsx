@@ -182,10 +182,21 @@ const BookingPage = () => {
         const d = new Date(st.start_time);
         return !isNaN(d.getTime()) && toLocalDateKey(d) === selectedDate;
       })
-      .sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
   }, [cinemaShowtimes, selectedDate]);
 
+  // Nhóm showtimes theo định dạng (projection_format)
+  const showtimesByFormat = useMemo(() => {
+    const map = {};
+    filteredShowtimes.forEach((st) => {
+      const fmt = st.projection_format || '2D Vietsub';
+      if (!map[fmt]) map[fmt] = [];
+      map[fmt].push(st);
+    });
+    return map;
+  }, [filteredShowtimes]);
+
   // KHÔNG auto-pick rạp (yêu cầu #1)
+
 
   // Khi đổi rạp → reset date, reset weekOffset
   useEffect(() => {
@@ -502,25 +513,35 @@ const BookingPage = () => {
                 {filteredShowtimes.length === 0 ? (
                   <p className={styles.subEmpty}>Không có suất chiếu cho ngày này.</p>
                 ) : (
-                  <div className={styles.showtimeGrid}>
-                    {filteredShowtimes.map((st) => (
-                      <button
-                        key={st.id}
-                        type="button"
-                        className={styles.timeBtn}
-                        onClick={() => handleSelectShowtime(st.id)}
-                      >
-                        <span className={styles.time}>
-                          {new Date(st.start_time).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false })}
-                        </span>
-                        <span className={styles.room}>{st.room?.name}</span>
-                        {st.from_price ? (
-                          <span className={styles.priceTag}>từ {formatVnd(st.from_price)}đ</span>
-                        ) : null}
-                      </button>
+                  <div className={styles.formatGroupList}>
+                    {Object.keys(showtimesByFormat).map((format) => (
+                      <div key={format} className={styles.formatRow}>
+                        <div className={styles.formatHeader}>
+                          <span className={styles.formatLabel}>{format}</span>
+                        </div>
+                        <div className={styles.showtimeGrid}>
+                          {showtimesByFormat[format].map((st) => (
+                            <button
+                              key={st.id}
+                              type="button"
+                              className={styles.timeBtn}
+                              onClick={() => handleSelectShowtime(st.id)}
+                            >
+                              <span className={styles.time}>
+                                {new Date(st.start_time).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false })}
+                              </span>
+                              <span className={styles.room}>{st.room?.name}</span>
+                              {st.from_price ? (
+                                <span className={styles.priceTag}>từ {formatVnd(st.from_price)}đ</span>
+                              ) : null}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
                     ))}
                   </div>
                 )}
+
               </section>
             </div>
           </>

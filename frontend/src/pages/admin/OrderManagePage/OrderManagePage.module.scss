@@ -81,9 +81,10 @@
   }
 
   tbody tr {
+    cursor: pointer;
     transition: background-color 0.2s;
     &:hover {
-      background-color: #f9fafb;
+      background-color: #f3f4f6;
     }
   }
 
@@ -208,21 +209,46 @@
   border-top: 1px solid #e5e7eb;
   display: flex;
   justify-content: flex-end;
+  gap: 12px;
   background-color: #f9fafb;
 
-  .cancelBtn {
-    padding: 10px 20px;
+  button {
+    padding: 10px 18px;
     border-radius: 6px;
     font-weight: 600;
     cursor: pointer;
     font-size: 14px;
+    transition: all 0.2s;
+  }
+
+  .cancelBtn {
     background-color: white;
     border: 1px solid #d1d5db;
     color: #374151;
-    transition: background-color 0.2s;
 
     &:hover {
       background-color: #f3f4f6;
+    }
+  }
+
+  .approveBtn {
+    background-color: #10b981;
+    border: 1px solid #10b981;
+    color: white;
+    margin-right: auto;
+
+    &:hover {
+      background-color: darken(#10b981, 8%);
+    }
+  }
+
+  .rejectBtn {
+    background-color: #ef4444;
+    border: 1px solid #ef4444;
+    color: white;
+
+    &:hover {
+      background-color: darken(#ef4444, 8%);
     }
   }
 }

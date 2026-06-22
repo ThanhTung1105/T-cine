@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { MdEdit, MdDelete, MdClose, MdSearch } from 'react-icons/md';
+import { MdClose, MdSearch } from 'react-icons/md';
 import axiosClient from '../../../api/axiosClient';
 import { getErrorMessage } from '../../../utils/helpers';
 import { notify, confirmDialog } from '../../../utils/notify';
+import useAuthStore from '../../../store/useAuthStore';
 import styles from './UserManagePage.module.scss';
 
 const roleMap = { admin: 'Quản trị viên', customer: 'Khách hàng' };
 
 const UserManagePage = () => {
+  const { user: currentUser } = useAuthStore();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [users, setUsers] = useState([]);
@@ -16,6 +18,11 @@ const UserManagePage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [formData, setFormData] = useState({ name: '', phone: '', role: 'customer' });
   const [errors, setErrors] = useState({});
+
+  const isAdminGlobal = currentUser?.email === 'admin@tcine.com';
+  const isEditingAdminGlobal = editingUser?.email === 'admin@tcine.com';
+  const canEditDetails = !isEditingAdminGlobal || isAdminGlobal;
+  const canDelete = editingUser?.email !== 'admin@tcine.com' && (isAdminGlobal || editingUser?.role !== 'admin');
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -58,6 +65,7 @@ const UserManagePage = () => {
     try {
       await axiosClient.delete(`/admin/users/${id}`);
       notify.success('Đã xóa người dùng thành công');
+      handleCloseModal();
       fetchUsers();
     } catch (e) {
       console.error(e);
@@ -93,7 +101,17 @@ const UserManagePage = () => {
       fetchUsers();
     } catch (e) {
       console.error(e);
-      notify.error(getErrorMessage(e), 'Cập nhật thất bại!');
+      if (e.response?.status === 422 && e.response?.data?.errors) {
+        const backendErrors = e.response.data.errors;
+        const newErrors = {};
+        Object.keys(backendErrors).forEach((key) => {
+          newErrors[key] = Array.isArray(backendErrors[key]) ? backendErrors[key][0] : backendErrors[key];
+        });
+        setErrors(newErrors);
+        notify.error('Thông tin người dùng chưa hợp lệ!', 'Cập nhật thất bại!');
+      } else {
+        notify.error(getErrorMessage(e), 'Cập nhật thất bại!');
+      }
     } finally {
       setSaving(false);
     }
@@ -116,12 +134,12 @@ const UserManagePage = () => {
       <div className={styles.tableContainer}>
         {loading ? <p style={{ textAlign: 'center', padding: '40px', color: '#aaa' }}>Đang tải...</p> : (
           <table className={styles.table}>
-            <thead><tr><th>ID</th><th>Họ tên</th><th>Email</th><th>Số điện thoại</th><th>Vai trò</th><th>Thao tác</th></tr></thead>
+            <thead><tr><th>ID</th><th>Họ tên</th><th>Email</th><th>Số điện thoại</th><th>Vai trò</th></tr></thead>
             <tbody>
               {users.length === 0 ? (
-                <tr><td colSpan="6" style={{ textAlign: 'center', padding: '30px', color: '#aaa' }}>Không có người dùng</td></tr>
+                <tr><td colSpan="5" style={{ textAlign: 'center', padding: '30px', color: '#aaa' }}>Không có người dùng</td></tr>
               ) : users.map(user => (
-                <tr key={user.id}>
+                <tr key={user.id} onClick={() => handleEdit(user)}>
                   <td>{user.id}</td>
                   <td><strong>{user.name}</strong></td>
                   <td>{user.email}</td>
@@ -130,12 +148,6 @@ const UserManagePage = () => {
                     <span className={`${styles.roleBadge} ${user.role === 'admin' ? styles.roleAdmin : styles.roleUser}`}>
                       {roleMap[user.role] || user.role}
                     </span>
-                  </td>
-                  <td>
-                    <div className={styles.actionBtns}>
-                      <button className={styles.editBtn} title="Chỉnh sửa" onClick={() => handleEdit(user)}><MdEdit /></button>
-                      <button className={styles.deleteBtn} title="Xóa" onClick={() => handleDelete(user.id)}><MdDelete /></button>
-                    </div>
                   </td>
                 </tr>
               ))}
@@ -155,28 +167,38 @@ const UserManagePage = () => {
               <form className={styles.form} onSubmit={e => e.preventDefault()} noValidate>
                 <div className={styles.formGroup}>
                   <label>Họ và tên *</label>
-                  <input type="text" name="name" value={formData.name} onChange={handleChange} className={errors.name ? 'inputErrorGlobal' : ''} />
+                  <input type="text" name="name" value={formData.name} onChange={handleChange} className={errors.name ? 'inputErrorGlobal' : ''} disabled={!canEditDetails} />
                   {errors.name && <span className="errorTextGlobal">{errors.name}</span>}
                 </div>
                 <div className={styles.formRow}>
                   <div className={styles.formGroup}>
                     <label>Số điện thoại</label>
-                    <input type="text" name="phone" value={formData.phone} onChange={handleChange} className={errors.phone ? 'inputErrorGlobal' : ''} />
+                    <input type="text" name="phone" value={formData.phone} onChange={handleChange} className={errors.phone ? 'inputErrorGlobal' : ''} disabled={!canEditDetails} />
                     {errors.phone && <span className="errorTextGlobal">{errors.phone}</span>}
                   </div>
                   <div className={styles.formGroup}>
                     <label>Vai trò</label>
-                    <select name="role" value={formData.role} onChange={handleChange}>
+                    <select name="role" value={formData.role} onChange={handleChange} disabled={!isAdminGlobal}>
                       <option value="customer">Khách hàng</option>
                       <option value="admin">Quản trị viên</option>
                     </select>
+                    {!isAdminGlobal && (
+                      <small className={styles.roleHelpText} style={{ color: '#9ca3af', fontStyle: 'italic', display: 'block', marginTop: '4px', fontSize: '11px' }}>
+                        Chỉ admin global mới có quyền phân quyền.
+                      </small>
+                    )}
                   </div>
                 </div>
               </form>
             </div>
             <div className={styles.modalFooter}>
+              {canDelete && (
+                <button type="button" className={styles.deleteBtnModal} onClick={() => handleDelete(editingUser.id)} disabled={saving}>
+                  Xóa người dùng
+                </button>
+              )}
               <button className={styles.cancelBtn} onClick={handleCloseModal}>Hủy</button>
-              <button className={styles.saveBtn} onClick={handleSave} disabled={saving}>{saving ? 'Đang lưu...' : 'Cập Nhật'}</button>
+              <button className={styles.saveBtn} onClick={handleSave} disabled={saving || !canEditDetails}>{saving ? 'Đang lưu...' : 'Cập Nhật'}</button>
             </div>
           </div>
         </div>

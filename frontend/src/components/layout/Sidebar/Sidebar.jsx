@@ -14,7 +14,8 @@ import {
   MdLocalOffer,
   MdAttachMoney,
   MdMenu,
-  MdChevronLeft
+  MdChevronLeft,
+  MdSettings
 } from 'react-icons/md';
 import styles from './Sidebar.module.scss';
 
@@ -25,6 +26,7 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
     { path: '/admin/rap', name: 'Quản lý Rạp', icon: <MdTheaters /> },
     { path: '/admin/phong-chieu', name: 'Phòng chiếu', icon: <MdEventSeat /> },
     { path: '/admin/lich-chieu', name: 'Lịch chiếu', icon: <MdCalendarToday /> },
+    { path: '/admin/dinh-dang', name: 'Định dạng chiếu', icon: <MdSettings /> },
     { path: '/admin/gia-ve', name: 'Bảng giá vé', icon: <MdAttachMoney /> },
     { path: '/admin/don-hang', name: 'Đơn hàng', icon: <MdReceipt /> },
     { path: '/admin/nguoi-dung', name: 'Người dùng', icon: <MdPeople /> },
