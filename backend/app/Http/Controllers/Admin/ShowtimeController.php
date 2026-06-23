@@ -62,23 +62,27 @@ class ShowtimeController extends Controller
         $endTime->modify("+{$duration} minutes");
         $data['end_time'] = $endTime->format('Y-m-d H:i:s');
 
+        $cleaningDuration = (int) env('SHOWTIME_CLEANING_DURATION', 15);
+        $newEndTimeWithCleaning = date('Y-m-d H:i:s', strtotime($data['end_time'] . " + {$cleaningDuration} minutes"));
+
         // Kiểm tra trùng lịch chiếu (Overlapping check)
         $overlap = Showtime::with('movie')
             ->where('room_id', $data['room_id'])
-            ->where(function ($query) use ($data) {
-                $query->where('start_time', '<', $data['end_time'])
-                      ->where('end_time', '>', $data['start_time']);
+            ->where(function ($query) use ($data, $newEndTimeWithCleaning, $cleaningDuration) {
+                $query->where('start_time', '<', $newEndTimeWithCleaning)
+                      ->whereRaw('DATE_ADD(end_time, INTERVAL ? MINUTE) > ?', [$cleaningDuration, $data['start_time']]);
             })
             ->first();
 
         if ($overlap) {
             $movieTitle = $overlap->movie ? $overlap->movie->title : 'Phim khác';
             $overlapStart = date('H:i d/m/Y', strtotime($overlap->start_time));
-            $overlapEnd = date('H:i d/m/Y', strtotime($overlap->end_time));
+            $overlapEndRaw = strtotime($overlap->end_time);
+            $cleaningEnd = date('H:i d/m/Y', strtotime("+{$cleaningDuration} minutes", $overlapEndRaw));
             return response()->json([
                 'message' => 'Lịch chiếu bị trùng!',
                 'errors' => [
-                    'start_time' => ["Phòng này đã có lịch chiếu phim \"{$movieTitle}\" từ {$overlapStart} đến {$overlapEnd}."]
+                    'start_time' => ["Phòng này đã có lịch chiếu phim \"{$movieTitle}\" (từ {$overlapStart} đến {$cleaningEnd} tính cả thời gian dọn dẹp {$cleaningDuration} phút)."]
                 ]
             ], 422);
         }
@@ -138,24 +142,28 @@ class ShowtimeController extends Controller
         $data['end_time'] = $endTime->format('Y-m-d H:i:s');
         $endTimeStr = $data['end_time'];
 
+        $cleaningDuration = (int) env('SHOWTIME_CLEANING_DURATION', 15);
+        $newEndTimeWithCleaning = date('Y-m-d H:i:s', strtotime($endTimeStr . " + {$cleaningDuration} minutes"));
+
         // Kiểm tra trùng lịch chiếu, loại trừ chính nó
         $overlap = Showtime::with('movie')
             ->where('room_id', $roomId)
             ->where('id', '!=', $id)
-            ->where(function ($query) use ($startTimeStr, $endTimeStr) {
-                $query->where('start_time', '<', $endTimeStr)
-                      ->where('end_time', '>', $startTimeStr);
+            ->where(function ($query) use ($startTimeStr, $newEndTimeWithCleaning, $cleaningDuration) {
+                $query->where('start_time', '<', $newEndTimeWithCleaning)
+                      ->whereRaw('DATE_ADD(end_time, INTERVAL ? MINUTE) > ?', [$cleaningDuration, $startTimeStr]);
             })
             ->first();
 
         if ($overlap) {
             $movieTitle = $overlap->movie ? $overlap->movie->title : 'Phim khác';
             $overlapStart = date('H:i d/m/Y', strtotime($overlap->start_time));
-            $overlapEnd = date('H:i d/m/Y', strtotime($overlap->end_time));
+            $overlapEndRaw = strtotime($overlap->end_time);
+            $cleaningEnd = date('H:i d/m/Y', strtotime("+{$cleaningDuration} minutes", $overlapEndRaw));
             return response()->json([
                 'message' => 'Lịch chiếu bị trùng!',
                 'errors' => [
-                    'start_time' => ["Phòng này đã có lịch chiếu phim \"{$movieTitle}\" từ {$overlapStart} đến {$overlapEnd}."]
+                    'start_time' => ["Phòng này đã có lịch chiếu phim \"{$movieTitle}\" (từ {$overlapStart} đến {$cleaningEnd} tính cả thời gian dọn dẹp {$cleaningDuration} phút)."]
                 ]
             ], 422);
         }

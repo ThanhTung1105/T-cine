@@ -495,6 +495,9 @@ const ShowtimeManagePage = () => {
                         </div>
                       </div>
                     </div>
+                    <small className={styles.helperText} style={{ color: '#0284c7', display: 'block', marginBottom: '12px' }}>
+                      💡 <strong>Quy định:</strong> Hệ thống tự động cộng thêm <strong>15 phút dọn dẹp</strong> sau khi phim kết thúc. Bạn không thể xếp suất chiếu tiếp theo đè lên khoảng thời gian dọn dẹp này.
+                    </small>
                     <small className={styles.helperText}>
                       Giá vé được lấy tự động từ <strong>Bảng giá vé</strong> theo loại ghế và ngày chiếu (T2-T6 ngày thường / T7-CN cuối tuần / Lễ). Sửa giá ở trang <strong>"Bảng giá vé"</strong>.
                     </small>

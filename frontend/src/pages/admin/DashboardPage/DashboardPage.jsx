@@ -20,6 +20,8 @@ const DashboardPage = () => {
   // Revenue (theo khoảng ngày)
   const [revenueData, setRevenueData] = useState([]);
   const [movieRevenues, setMovieRevenues] = useState([]);
+  const [cinemaRevenues, setCinemaRevenues] = useState([]);
+  const [ticketStats, setTicketStats] = useState(null);
   const [totalRevenue, setTotalRevenue] = useState(0);
   const [totalBookings, setTotalBookings] = useState(0);
 
@@ -45,14 +47,18 @@ const DashboardPage = () => {
       if (dateFrom) params.from = dateFrom;
       if (dateTo) params.to = dateTo;
 
-      const [revenueRes, movieRes] = await Promise.all([
+      const [revenueRes, movieRes, cinemaRes, ticketRes] = await Promise.all([
         axiosClient.get('/admin/revenue', { params }),
         axiosClient.get('/admin/revenue/by-movie', { params }),
+        axiosClient.get('/admin/revenue/by-cinema', { params }),
+        axiosClient.get('/admin/stats/tickets', { params }),
       ]);
 
       const data = revenueRes.data || [];
       setRevenueData(data);
       setMovieRevenues(movieRes.data || []);
+      setCinemaRevenues(cinemaRes.data || []);
+      setTicketStats(ticketRes.data || null);
       setTotalRevenue(data.reduce((sum, d) => sum + Number(d.revenue || 0), 0));
       setTotalBookings(data.reduce((sum, d) => sum + Number(d.count || 0), 0));
     } catch (e) { console.error(e); }
@@ -175,111 +181,117 @@ const DashboardPage = () => {
         ))}
       </div>
 
-      {/* Biểu đồ doanh thu theo ngày */}
-      <div className={styles.chartSection}>
+      {/* Doanh thu theo phim */}
+      <div className={styles.tableSection}>
         <div className={styles.sectionHeader}>
-          <h3>Biểu đồ doanh thu theo ngày {hasDateFilter && <span className={styles.tagFilter}>(đã lọc)</span>}</h3>
-          <span className={styles.note}>{chartData.length > 0 ? `${chartData.length} ngày gần nhất` : ''}</span>
+          <h3>Top phim theo doanh thu {hasDateFilter && <span className={styles.tagFilter}>(đã lọc)</span>}</h3>
         </div>
-        {loadingRevenue ? (
-          <p style={{ textAlign: 'center', padding: '60px', color: '#aaa' }}>Đang tải...</p>
-        ) : chartData.length === 0 ? (
-          <p style={{ textAlign: 'center', padding: '60px', color: '#aaa' }}>Chưa có dữ liệu doanh thu</p>
-        ) : (
-          <div className={styles.chartMock}>
-            {chartData.map((d, i) => (
-              <div key={i} className={styles.barContainer}>
-                <div
-                  className={styles.bar}
-                  style={{ height: `${(Number(d.revenue) / maxRevenue) * 100}%` }}
-                  title={`${new Date(d.date).toLocaleDateString('vi-VN')}: ${formatVND(d.revenue)}`}
-                ></div>
-                <span>{new Date(d.date).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })}</span>
-              </div>
-            ))}
-          </div>
-        )}
+        <div className={styles.tableResponsive}>
+          <table className={styles.dataTable}>
+            <thead>
+              <tr>
+                <th style={{ width: 80 }}>Hạng</th>
+                <th>Tên Phim Phổ Biến</th>
+                <th style={{ width: 150 }}>Số đơn đặt thành công</th>
+                <th>Tổng Doanh Thu Phim</th>
+              </tr>
+            </thead>
+            <tbody>
+              {movieRevenues.length === 0 ? (
+                <tr>
+                  <td colSpan="4" style={{ textAlign: 'center', padding: '20px', color: '#aaa' }}>
+                    Chưa có dữ liệu doanh thu phim
+                  </td>
+                </tr>
+              ) : movieRevenues.slice(0, 10).map((movie, index) => (
+                <tr key={movie.id}>
+                  <td><strong>#{index + 1}</strong></td>
+                  <td><strong>{movie.title}</strong></td>
+                  <td>{movie.booking_count} đơn</td>
+                  <td className={styles.revenueText}>{formatVND(movie.revenue)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
-      {/* Layout 2 cột: Doanh thu theo phim | Đơn đặt vé gần đây */}
-      <div className={styles.twoCol}>
-        {/* Doanh thu theo phim */}
-        <div className={styles.tableSection}>
+      {/* Cấu trúc 2 cột mới cho Thống kê Rạp và Loại Ghế */}
+      <div className={styles.statsTwoCol}>
+        {/* Cột trái: Thống kê doanh thu theo cụm rạp */}
+        <div className={styles.statsBox}>
           <div className={styles.sectionHeader}>
-            <h3>Top phim theo doanh thu</h3>
+            <h3>Xếp hạng doanh thu theo Cụm rạp {hasDateFilter && <span className={styles.tagFilter}>(đã lọc)</span>}</h3>
           </div>
-          <div className={styles.tableResponsive}>
-            <table className={styles.dataTable}>
-              <thead>
-                <tr>
-                  <th style={{ width: 60 }}>Top</th>
-                  <th>Tên Phim</th>
-                  <th style={{ width: 80 }}>Số đơn</th>
-                  <th>Doanh thu</th>
-                </tr>
-              </thead>
-              <tbody>
-                {movieRevenues.length === 0 ? (
-                  <tr>
-                    <td colSpan="4" style={{ textAlign: 'center', padding: '20px', color: '#aaa' }}>
-                      Chưa có dữ liệu
-                    </td>
-                  </tr>
-                ) : movieRevenues.slice(0, 8).map((movie, index) => (
-                  <tr key={movie.id}>
-                    <td><strong>#{index + 1}</strong></td>
-                    <td><strong>{movie.title}</strong></td>
-                    <td>{movie.booking_count}</td>
-                    <td className={styles.revenueText}>{formatVND(movie.revenue)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          {cinemaRevenues.length === 0 ? (
+            <p className={styles.emptyText}>Chưa có dữ liệu doanh thu rạp</p>
+          ) : (
+            <div className={styles.leaderboardList}>
+              {cinemaRevenues.map((cinema, idx) => {
+                const percent = totalRevenue > 0 
+                  ? Math.min(100, Math.round((Number(cinema.revenue) / totalRevenue) * 100)) 
+                  : 0;
+                return (
+                  <div key={cinema.id} className={styles.leaderboardItem}>
+                    <div className={styles.itemMeta}>
+                      <span className={styles.rank}>#{idx + 1}</span>
+                      <span className={styles.name}>{cinema.name}</span>
+                      <span className={styles.value}>{formatVND(cinema.revenue)} ({cinema.booking_count} đơn)</span>
+                    </div>
+                    <div className={styles.progressBarContainer}>
+                      <div 
+                        className={styles.progressBar} 
+                        style={{ width: `${percent}%`, backgroundColor: '#3b82f6' }}
+                      ></div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
 
-        {/* Đơn đặt vé gần đây */}
-        <div className={styles.tableSection}>
+        {/* Cột phải: Tỷ lệ vé bán theo loại ghế */}
+        <div className={styles.statsBox}>
           <div className={styles.sectionHeader}>
-            <h3>Đơn đặt vé gần đây</h3>
-            <button className={styles.viewAllBtn} onClick={() => navigate('/admin/don-hang')}>
-              Xem tất cả
-            </button>
+            <h3>Tỷ lệ vé bán ra theo Loại ghế {hasDateFilter && <span className={styles.tagFilter}>(đã lọc)</span>}</h3>
           </div>
-          <div className={styles.tableResponsive}>
-            <table className={styles.dataTable}>
-              <thead>
-                <tr>
-                  <th>Mã đơn</th>
-                  <th>Khách hàng</th>
-                  <th>Phim</th>
-                  <th>Tổng tiền</th>
-                  <th>Trạng thái</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(dashboardData.recent_bookings || []).length === 0 ? (
-                  <tr>
-                    <td colSpan="5" style={{ textAlign: 'center', padding: '20px', color: '#aaa' }}>
-                      Chưa có đơn hàng
-                    </td>
-                  </tr>
-                ) : dashboardData.recent_bookings.map((order) => (
-                  <tr key={order.id}>
-                    <td><strong>{order.booking_code}</strong></td>
-                    <td>{order.user?.name || 'N/A'}</td>
-                    <td>{order.showtime?.movie?.title || 'N/A'}</td>
-                    <td>{formatVND(order.final_amount)}</td>
-                    <td>
-                      <span className={`${styles.statusBadge} ${order.status === 'paid' ? styles.statusSuccess : order.status === 'cancelled' ? styles.statusCancelled : styles.statusPending}`}>
-                        {statusMap[order.status] || order.status}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          {!ticketStats || !ticketStats.by_type || ticketStats.by_type.length === 0 ? (
+            <p className={styles.emptyText}>Chưa có dữ liệu vé bán</p>
+          ) : (
+            <div className={styles.seatTypeList}>
+              {(() => {
+                const totalTickets = ticketStats.total_tickets || 0;
+                const typeLabelMap = {
+                  normal: { name: 'Ghế thường (Standard)', color: '#10b981' },
+                  vip: { name: 'Ghế VIP', color: '#f59e0b' },
+                  couple: { name: 'Ghế đôi (Couple)', color: '#ef4444' }
+                };
+                
+                return ticketStats.by_type.map((typeStat) => {
+                  const labelMeta = typeLabelMap[typeStat.seat_type] || { name: typeStat.seat_type, color: '#9ca3af' };
+                  const percent = totalTickets > 0 
+                    ? Math.min(100, Math.round((typeStat.count / totalTickets) * 100)) 
+                    : 0;
+                  return (
+                    <div key={typeStat.seat_type} className={styles.seatTypeItem}>
+                      <div className={styles.itemMeta}>
+                        <span className={styles.dot} style={{ backgroundColor: labelMeta.color }}></span>
+                        <span className={styles.name}>{labelMeta.name}</span>
+                        <span className={styles.value}>{typeStat.count} vé ({percent}%)</span>
+                      </div>
+                      <div className={styles.progressBarContainer}>
+                        <div 
+                          className={styles.progressBar} 
+                          style={{ width: `${percent}%`, backgroundColor: labelMeta.color }}
+                        ></div>
+                      </div>
+                    </div>
+                  );
+                });
+              })()}
+            </div>
+          )}
         </div>
       </div>
     </div>
