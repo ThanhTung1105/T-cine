@@ -4,10 +4,10 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Booking;
-use App\Models\Movie;
-use App\Models\User;
 use App\Models\Cinema;
+use App\Models\Movie;
 use App\Models\Ticket;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -39,8 +39,12 @@ class DashboardController extends Controller
     {
         $query = Booking::where('status', 'paid');
 
-        if ($request->filled('from')) $query->whereDate('created_at', '>=', $request->from);
-        if ($request->filled('to')) $query->whereDate('created_at', '<=', $request->to);
+        if ($request->filled('from')) {
+            $query->whereDate('created_at', '>=', $request->from);
+        }
+        if ($request->filled('to')) {
+            $query->whereDate('created_at', '<=', $request->to);
+        }
 
         $daily = (clone $query)->select(
             DB::raw('DATE(created_at) as date'),
@@ -60,8 +64,12 @@ class DashboardController extends Controller
             ->join('showtimes', 'bookings.showtime_id', '=', 'showtimes.id')
             ->join('movies', 'showtimes.movie_id', '=', 'movies.id');
 
-        if ($request->filled('from')) $query->whereDate('bookings.created_at', '>=', $request->from);
-        if ($request->filled('to')) $query->whereDate('bookings.created_at', '<=', $request->to);
+        if ($request->filled('from')) {
+            $query->whereDate('bookings.created_at', '>=', $request->from);
+        }
+        if ($request->filled('to')) {
+            $query->whereDate('bookings.created_at', '<=', $request->to);
+        }
 
         $data = $query->select(
             'movies.id', 'movies.title',
@@ -83,8 +91,12 @@ class DashboardController extends Controller
             ->join('rooms', 'showtimes.room_id', '=', 'rooms.id')
             ->join('cinemas', 'rooms.cinema_id', '=', 'cinemas.id');
 
-        if ($request->filled('from')) $query->whereDate('bookings.created_at', '>=', $request->from);
-        if ($request->filled('to')) $query->whereDate('bookings.created_at', '<=', $request->to);
+        if ($request->filled('from')) {
+            $query->whereDate('bookings.created_at', '>=', $request->from);
+        }
+        if ($request->filled('to')) {
+            $query->whereDate('bookings.created_at', '<=', $request->to);
+        }
 
         $data = $query->select(
             'cinemas.id', 'cinemas.name',
@@ -104,8 +116,12 @@ class DashboardController extends Controller
         $query = Ticket::join('bookings', 'tickets.booking_id', '=', 'bookings.id')
             ->where('bookings.status', 'paid');
 
-        if ($request->filled('from')) $query->whereDate('bookings.created_at', '>=', $request->from);
-        if ($request->filled('to')) $query->whereDate('bookings.created_at', '<=', $request->to);
+        if ($request->filled('from')) {
+            $query->whereDate('bookings.created_at', '>=', $request->from);
+        }
+        if ($request->filled('to')) {
+            $query->whereDate('bookings.created_at', '<=', $request->to);
+        }
 
         return response()->json([
             'data' => [
